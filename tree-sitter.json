@@ -1,0 +1,41 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "oracle_plsql",
+      "camelcase": "OraclePlsql",
+      "title": "OraclePlsql",
+      "scope": "source.oracle_plsql",
+      "file-types": [
+        "sql"
+      ],
+      "injection-regex": "^oracle_plsql$",
+      "class-name": "TreeSitterOraclePlsql"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Tree-Sitter grammar for Oracle PLSQL",
+    "authors": [
+      {
+        "name": "Hrushikesh Pawar",
+        "url": ""
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql",
+      "funding": ""
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "java": false,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": false
+  }
+}

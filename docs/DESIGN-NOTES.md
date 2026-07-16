@@ -16,7 +16,7 @@ under `docs/spec/`.
 | [D4](#d4--version-neutral-grammar) | Version-neutral grammar | Locked | Salvage |
 | [D5](#d5--conditional-compilation-envelope) | Conditional compilation envelope | Locked | Salvage |
 | [D6](#d6--wrapped-units) | Wrapped units | Locked | Salvage |
-| [D7](#d7--embedded-sql) | Embedded SQL | Locked (boundary still open) | Salvage; subset in [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14) |
+| [D7](#d7--embedded-sql) | Embedded SQL | Locked | [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14) |
 | [D8](#d8--opaque-literal-tokens) | Opaque literal tokens | Locked | Salvage |
 | [D9](#d9--external-scanner-for-strings) | External scanner for strings / q-strings | Locked (flipped) | [#11](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11) |
 | [D10](#d10--publish-targets-v1) | Publish targets (v1 bindings) | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
@@ -105,9 +105,25 @@ Wrapped units (`... WRAPPED`) are consumed as an opaque token stream.
 
 ## D7 — Embedded SQL
 
-**Locked direction** (salvage); exact subset still open in [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14).
+**Locked 2026-07-16** via [Decide: embedded SQL subset boundary](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14).
 
-Embedded SQL is modeled natively (not injected) for the DML subset; anything beyond the subset should fail *locally*. Apply [D14](#d14--recovery-vs-precision-rubric) when drawing the boundary.
+| Axis | Lock |
+|------|------|
+| Modeling | **Native** in this grammar — **not** tree-sitter injection into a separate SQL grammar |
+| Depth | **Structured spine + opaque interior** (interiors may deepen later; does not flip native) |
+| Beyond subset | **Fail locally** — never fake-valid full Oracle SQL ([D14](#d14--recovery-vs-precision-rubric)) |
+
+**IN (v1 claim):** `INSERT` / `UPDATE` / `DELETE` / `MERGE`; `SELECT INTO` (incl. `BULK COLLECT INTO`); TCL (`COMMIT` / `ROLLBACK` / `SAVEPOINT` / `SET TRANSACTION`, fully structured); `LOCK TABLE` (thin); collection mutators `.DELETE`/`.EXTEND`/`.TRIM`; nested select spine (no `INTO`) at cursor / `OPEN FOR` / iterator / `EXISTS`&`IN` subqueries; FORALL reuses DML/`EXECUTE IMMEDIATE` (string body unparsed).
+
+**Precise hooks:** `INTO` / `BULK COLLECT INTO` targets; `RETURNING [BULK COLLECT] INTO` targets; `WHERE CURRENT OF` cursor; record `VALUES` / `SET ROW`.
+
+**Precise `WHERE`:** PL/SQL expression ladder + `EXISTS (subquery)` + `IN (subquery)` only. SELECT: coarse select-list; opaque FROM-prefix until clause keyword; then precise `WHERE`; opaque tail for other clauses. `SET` lists, `VALUES` guts, MERGE body stay opaque.
+
+**OUT (v1):** full SQL/DDL; standalone `SELECT` statement; `WITH`/CTE; `ANY`/`ALL`/`SOME`/`PRIOR`/other SQL-only predicates; deep joins/itemized lists/structured SET/full MERGE arms; multi-value row `(a,b,…)` as free expression primary.
+
+**Provisional:** [legacy census](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/4) may promote OUT→IN or opaque→precise; core IN not dropped without a new decision.
+
+**Full construct tables:** `docs/spec/research/05-sql-subset-boundary.md`. Area detail: lock `docs/spec/05-sql.md`.
 
 ---
 
@@ -276,7 +292,7 @@ One **`attribute_reference`** for every `base % attr` (cursor attrs, `SQL%…`, 
 - **`parenthesized_expression`:** `(` expression `)` — ordinary grouping only.
 - **Subquery / select-as-expression:** only when the interior **starts with** a claimed SQL query keyword (`SELECT` / `WITH` / … per the embedded-SQL subset). Not an open-paren GLR race against any expression.
 - **Old-style outer join `(+)`:** separate token/postfix on a column ref — not a parenthesized expression.
-- **Multi-value row `(a, b, …)`:** deferred to [Decide: embedded SQL subset boundary](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14) unless pure PL/SQL later forces an expression primary.
+- **Multi-value row `(a, b, …)`:** **out** as free expression primary in v1 ([D7](#d7--embedded-sql) / `05-sql-subset-boundary`); DML value lists stay inside opaque `VALUES` guts unless a later expressions decision forces a pure-PL/SQL primary.
 
 ### Procedure call statements
 
@@ -334,7 +350,7 @@ the map methodology.
 ### Known pain points
 
 1. `name` vs `qualified_name` vs `member_expression` vs `call_expression` — **resolved** in [D15](#d15--reference-ambiguity-strategy) ([#13](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13)).
-2. `(expr)` vs `(subquery)` vs row constructor — grouping vs subquery **resolved** in [D15](#d15--reference-ambiguity-strategy); multi-value row deferred to [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14).
+2. `(expr)` vs `(subquery)` vs row constructor — grouping vs subquery **resolved** in [D15](#d15--reference-ambiguity-strategy); multi-value row **out** as free primary in v1 per [D7](#d7--embedded-sql).
 3. CASE expression vs CASE statement (`END CASE` vs `END`).
 4. `%TYPE` / `%ROWTYPE` vs cursor attributes (`%FOUND`, …) — **resolved** in [D15](#d15--reference-ambiguity-strategy) (single `attribute_reference`).
 

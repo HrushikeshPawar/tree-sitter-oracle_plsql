@@ -117,7 +117,7 @@ Wrapped units (`... WRAPPED`) are consumed as an opaque token stream.
 
 **Precise hooks:** `INTO` / `BULK COLLECT INTO` targets; `RETURNING [BULK COLLECT] INTO` targets; `WHERE CURRENT OF` cursor; record `VALUES` / `SET ROW`.
 
-**Precise `WHERE`:** PL/SQL expression ladder + `EXISTS (subquery)` + `IN (subquery)` only. SELECT: coarse select-list; opaque FROM-prefix until clause keyword; then precise `WHERE`; opaque tail for other clauses. `SET` lists, `VALUES` guts, MERGE body stay opaque.
+**Precise `WHERE`:** PL/SQL expression ladder + `EXISTS (subquery)` + `IN (subquery)` only. SELECT: coarse select-list; opaque FROM-prefix until clause keyword; then precise `WHERE`; opaque tail for other clauses. `SET` lists, `VALUES` guts, and `MERGE` body stay opaque.
 
 **OUT (v1):** full SQL/DDL; standalone `SELECT` statement; `WITH`/CTE; `ANY`/`ALL`/`SOME`/`PRIOR`/other SQL-only predicates; deep joins/itemized lists/structured SET/full MERGE arms; multi-value row `(a,b,…)` as free expression primary.
 

@@ -3,7 +3,7 @@
 **Ticket:** [Decide: embedded SQL subset boundary](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14)  
 **Status:** Locked 2026-07-16  
 **Applies:** Phase 5 / `docs/spec/05-sql.md` lock; all SQL call-sites in blocks, statements, units, expressions  
-**Rubric:** [D14](../../DESIGN-NOTES.md#d14--recovery-vs-precision-rubric) · consumer priority both-equally
+**Rubric:** [D14](../../DESIGN-NOTES.md#d14--recovery-vs-precision-rubric) · consumer priority: both equally
 
 ---
 
@@ -26,7 +26,7 @@ This is **not** a full Oracle SQL grammar (map out of scope).
 
 | Kind | Notes |
 |------|--------|
-| `INSERT` / `UPDATE` / `DELETE` / `MERGE` | Named DML statements under supertype `statement` (D3) |
+| `INSERT` / `UPDATE` / `DELETE` / `MERGE` | Named DML statements under supertype `statement` ([D3](../../DESIGN-NOTES.md#d3--supertypes-and-fields)) |
 | `SELECT INTO` / `SELECT … BULK COLLECT INTO` | PL/SQL-only select form; **not** interchangeable with nested select |
 | TCL: `COMMIT` / `ROLLBACK` / `SAVEPOINT` / `SET TRANSACTION` | **Fully structured** (small surface) |
 | `LOCK TABLE` | Thin spine |
@@ -40,7 +40,7 @@ Same select shape **without** `INTO` / `BULK COLLECT INTO`, used at:
 - `OPEN … FOR` static select  
 - Iterator / classic cursor `FOR` with `(SELECT …)`  
 - Subquery under **`EXISTS (subquery)`** and **`IN (subquery)`** in precise `WHERE` conditions  
-- Expression-level subquery only when interior **starts with** a claimed query keyword (`SELECT` for v1; see OUT for `WITH`) — aligns with reference strategy (D15)
+- Expression-level subquery only when interior **starts with** a claimed query keyword (`SELECT` for v1; see OUT for `WITH`) — aligns with reference strategy ([D15](../../DESIGN-NOTES.md#d15--reference-ambiguity-strategy))
 
 ### 2.3 FORALL / dynamic SQL
 
@@ -102,20 +102,20 @@ condition  ≈  PL/SQL expression / boolean ladder
 
 ## 5. OUT — not claimed in v1
 
-No dedicated production; do not invent permissive rules that pretend these are valid claimed surface. Prefer localized recovery (D14).
+No dedicated production; do not invent permissive rules that pretend these are valid claimed surfaces. Prefer localized recovery ([D14](../../DESIGN-NOTES.md#d14--recovery-vs-precision-rubric)).
 
 | Out item | Rationale |
 |----------|-----------|
 | Full Oracle SQL grammar | Map out of scope |
 | Free-standing **DDL** (`CREATE`/`ALTER`/`DROP` table, …) as SQL statements | Not embedded PL/SQL DML subset |
 | Standalone **`SELECT` statement** (no `INTO`) | Not a PL/SQL statement; nested sites only |
-| **`WITH` / CTE** | Optional promote after census |
+| **`WITH` / CTE** | Optional promotion after census |
 | Deep structured joins, itemized select-list, structured `SET`, full MERGE arms | Depth expansion candidates, not v1 claim |
 | Analytics / model clause / pivot / etc. as structure | Opaque tail or fail; not claimed nodes |
 | Multi-value row constructor `(a, b, …)` as a free expression primary | Not claimed under this boundary; DML value lists stay inside opaque `VALUES` guts unless a later expressions decision forces a pure-PL/SQL primary |
-| Language **injection** into an external SQL grammar | Rejected (D7 native) |
+| Language **injection** into an external SQL grammar | Rejected ([D7](../../DESIGN-NOTES.md#d7--embedded-sql) native) |
 
-**Census proviso:** legacy scan may show OUT items that must become IN (or deepen). Revisit this document + D7; do not silently drop core IN.
+**Census proviso:** legacy scan may show OUT items that must become IN (or deepen). Revisit this document + [D7](../../DESIGN-NOTES.md#d7--embedded-sql); do not silently drop core IN.
 
 ---
 
@@ -135,7 +135,7 @@ Detail and node names land in `docs/spec/05-sql.md` and statements/expressions l
 ## 7. Decision index (for `05-sql` lock checklist)
 
 1. Confirm keyword dispatch table (§2.1) and nested sites (§2.2).  
-2. Implement spine/opaque split (§3) under D1/D3 naming.  
+2. Implement spine/opaque split (§3) under [D1](../../DESIGN-NOTES.md#d1--grammar-name-and-node-naming)/[D3](../../DESIGN-NOTES.md#d3--supertypes-and-fields) naming.  
 3. Wire `WHERE` condition production (§4) shared with expression ladder.  
 4. Hooks (§2.4) as required fields when present.  
 5. OUT list (§5) — recovery only; no fake nodes.  
@@ -146,6 +146,6 @@ Detail and node names land in `docs/spec/05-sql.md` and statements/expressions l
 
 ## 8. Map impact
 
-- **Locks D7** boundary (was “direction only”).  
+- **Locks [D7](../../DESIGN-NOTES.md#d7--embedded-sql)** boundary (was “direction only”).  
 - **Unblocks / feeds:** Lock `05-sql.md`; statements SQL flags (S16, S28, S30–S31, S34, S41–S43); blocks cursor query (B20); units trigger `WHEN` SQL (U16); expressions SQL-ish ops and subquery primary.  
 - **Does not implement** grammar rules.

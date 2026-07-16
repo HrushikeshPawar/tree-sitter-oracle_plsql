@@ -236,7 +236,7 @@ Supertype membership: all of `string_literal`, `q_string_literal`, `number_liter
 | L1 | Longest-match multi-char delimiters |
 | L2 | All four not-equal operators |
 | L3 | Comments as extras (not tree nodes) |
-| L4 | SQL\*Plus `/` deferred |
+| L4 | SQL\*Plus `/` top-level script peer only (D17); division in expressions |
 | L5 | Allow `_` start (documented looseness; provisional vs census) |
 | L6 | Unicode letter/digit classes |
 | L7 | No interior `"` / no `""` escape in quoted ids |

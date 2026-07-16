@@ -7,7 +7,14 @@
       "title": "OraclePlsql",
       "scope": "source.oracle_plsql",
       "file-types": [
-        "sql"
+        "pks",
+        "pkb",
+        "pls",
+        "plb",
+        "pck",
+        "prc",
+        "fnc",
+        "trg"
       ],
       "injection-regex": "^oracle_plsql$",
       "class-name": "TreeSitterOraclePlsql"
@@ -30,12 +37,12 @@
   },
   "bindings": {
     "c": true,
-    "go": true,
+    "go": false,
     "java": false,
     "node": true,
     "python": true,
     "rust": true,
-    "swift": true,
+    "swift": false,
     "zig": false
   }
 }

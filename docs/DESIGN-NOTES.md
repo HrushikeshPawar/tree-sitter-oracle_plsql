@@ -16,7 +16,7 @@ under `docs/spec/`.
 | [D4](#d4--version-neutral-grammar) | Version-neutral grammar | Locked | Salvage |
 | [D5](#d5--conditional-compilation-envelope) | Conditional compilation envelope | Locked (refined) | Salvage; refined in [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
 | [D6](#d6--wrapped-units) | Wrapped units | Locked | Salvage |
-| [D7](#d7--embedded-sql) | Embedded SQL | Locked | [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14) |
+| [D7](#d7--embedded-sql) | Embedded SQL | Locked (shapes in area spec) | [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14); area [#32](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/32) |
 | [D8](#d8--opaque-literal-tokens) | Opaque literal tokens | Locked | Salvage |
 | [D9](#d9--external-scanner-for-strings) | External scanner for strings / q-strings (+ block comments) | Locked (flipped; surface extended) | [#11](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11); extended [#12](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/12) |
 | [D10](#d10--publish-targets-v1) | Publish targets (v1 bindings) | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
@@ -121,7 +121,7 @@ Wrapped units (`... WRAPPED`) are consumed as an opaque token stream.
 
 ## D7 — Embedded SQL
 
-**Locked 2026-07-16** via [Decide: embedded SQL subset boundary](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14).
+**Locked 2026-07-16** via [Decide: embedded SQL subset boundary](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14); **Phase-5 shapes locked** 2026-07-16 via [Lock spec: 05-sql.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/32).
 
 | Axis | Lock |
 |------|------|
@@ -139,7 +139,20 @@ Wrapped units (`... WRAPPED`) are consumed as an opaque token stream.
 
 **Provisional:** [legacy census](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/4) may promote OUT→IN or opaque→precise; core IN not dropped without a new decision.
 
-**Full construct tables:** `docs/spec/research/05-sql-subset-boundary.md`. Area detail: lock `docs/spec/05-sql.md`.
+### Phase-5 shape gist (area lock)
+
+| Topic | Lock |
+|-------|------|
+| Select nodes | **Two public:** `select_into_statement` vs `select_statement` (no free `INTO` on nested); shared private region helpers |
+| Regions | Named `select_list` / `from_clause` / `where_clause` / `select_tail`; field `condition` on WHERE |
+| Opaque convention | Named-region **paren-aware token soup** + stop sets — not scanner blobs; deepen under stable names |
+| DML | `insert_statement` / `update_statement` / `delete_statement` / `merge_statement`; field `target`; `returning_clause`; `current_of_clause` (`cursor`); MERGE `merge_body` opaque |
+| Condition | `condition` ≡ Phase-4 `expression`; add `exists_expression`; extend `in_expression` RHS with subquery |
+| Envelope | `sql_statement` named statement alternative per 03 (not a SQL *supertype*); `select_into_statement` sibling |
+| TCL / LOCK | TCL fully structured; `lock_table_statement` + opaque `lock_table_body` |
+| INTO helpers | Reuse 03 `into_clause` / `bulk_collect_into_clause` (S27) |
+
+**Full construct tables:** `docs/spec/research/05-sql-subset-boundary.md`. **Area detail:** `docs/spec/05-sql.md` (SQL1–SQL9).
 
 ---
 

@@ -1,114 +1,82 @@
 ================================================================================
-ordinary string literal
+precedence: unary binds tighter than mul (-a*b)
 ================================================================================
 
-'hello';
+-a*b;
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (string_literal)))
+    (binary_expression
+      left: (unary_expression
+        argument: (identifier))
+      right: (identifier))))
 
 ================================================================================
-empty string literal
+precedence: power binds tighter than unary (-2**2)
 ================================================================================
 
-'';
+-2**2;
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (string_literal)))
+    (unary_expression
+      argument: (binary_expression
+        left: (number_literal)
+        right: (number_literal)))))
 
 ================================================================================
-string with doubled quote escape
+precedence: NOT below comparison (NOT a = b)
 ================================================================================
 
-'it''s';
+NOT a = b;
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (string_literal)))
+    (unary_expression
+      argument: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
 
 ================================================================================
-national string literal
+precedence: concat shares additive left-assoc (a || b + c)
 ================================================================================
 
-n'national';
+a || b + c;
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (string_literal)))
+    (binary_expression
+      left: (binary_expression
+        left: (identifier)
+        right: (identifier))
+      right: (identifier))))
 
 ================================================================================
-multiline ordinary string
+power is right-associative
 ================================================================================
 
-'line1
-line2';
+2**3**2;
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (string_literal)))
+    (binary_expression
+      left: (number_literal)
+      right: (binary_expression
+        left: (number_literal)
+        right: (number_literal)))))
 
 ================================================================================
-q-string bracket delimiter
-================================================================================
-
-q'[hello]';
-
---------------------------------------------------------------------------------
-
-(source_file
-  (expression_statement
-    (q_string_literal)))
-
-================================================================================
-q-string content ending with delimiter char
-================================================================================
-
-q'[he]llo]';
-
---------------------------------------------------------------------------------
-
-(source_file
-  (expression_statement
-    (q_string_literal)))
-
-================================================================================
-q-string same-char delimiter
-================================================================================
-
-q'!bang!';
-
---------------------------------------------------------------------------------
-
-(source_file
-  (expression_statement
-    (q_string_literal)))
-
-================================================================================
-national q-string
-================================================================================
-
-nq'<angle>';
-
---------------------------------------------------------------------------------
-
-(source_file
-  (expression_statement
-    (q_string_literal)))
-
-================================================================================
-not-equal operators all four
+all four not-equal operators at COMPARE
 ================================================================================
 
 a <> b;
@@ -121,356 +89,399 @@ g ^= h;
 (source_file
   (expression_statement
     (binary_expression
-      (identifier)
-      (identifier)))
+      left: (identifier)
+      right: (identifier)))
   (expression_statement
     (binary_expression
-      (identifier)
-      (identifier)))
+      left: (identifier)
+      right: (identifier)))
   (expression_statement
     (binary_expression
-      (identifier)
-      (identifier)))
+      left: (identifier)
+      right: (identifier)))
   (expression_statement
     (binary_expression
-      (identifier)
-      (identifier))))
+      left: (identifier)
+      right: (identifier))))
 
 ================================================================================
-underscore-start identifier
+CASE expression multi-choice WHEN ends with END
 ================================================================================
 
-_foo;
+CASE x WHEN 1, 2 THEN 3 END;
 
 --------------------------------------------------------------------------------
 
 (source_file
+  (expression_statement
+    (case_expression
+      selector: (identifier)
+      (when_clause
+        choice: (number_literal)
+        choice: (number_literal)
+        consequence: (number_literal)))))
+
+================================================================================
+CASE expression dangling predicate
+================================================================================
+
+CASE x WHEN < 0 THEN 1 END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (case_expression
+      selector: (identifier)
+      (when_clause
+        choice: (dangling_predicate
+          right: (number_literal))
+        consequence: (number_literal)))))
+
+================================================================================
+CASE expression searched form with ELSE
+================================================================================
+
+CASE WHEN a = b THEN 1 ELSE 2 END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (case_expression
+      (when_clause
+        choice: (binary_expression
+          left: (identifier)
+          right: (identifier))
+        consequence: (number_literal))
+      default: (number_literal))))
+
+================================================================================
+CASE statement shell ends with END CASE (E15 pair)
+================================================================================
+
+CASE x WHEN 1 THEN NULL; WHEN 2 THEN NULL; END CASE;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (case_statement
+    selector: (identifier)
+    (case_statement_when_clause
+      choice: (number_literal)
+      consequence: (statement
+        (null_statement)))
+    (case_statement_when_clause
+      choice: (number_literal)
+      consequence: (statement
+        (null_statement)))))
+
+================================================================================
+call with empty argument_list; bare f is never a call
+================================================================================
+
+f();
+f;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (call_expression
+      function: (identifier)
+      arguments: (argument_list)))
   (expression_statement
     (identifier)))
 
 ================================================================================
-unicode letter identifier
+named, mixed, and positional-after-named arguments (E16)
 ================================================================================
 
-café;
+f(a => 1);
+f(a => 1, 2);
+f(1, b => 2);
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (identifier)))
-
-================================================================================
-quoted identifier
-================================================================================
-
-"MixedCase";
-
---------------------------------------------------------------------------------
-
-(source_file
+    (call_expression
+      function: (identifier)
+      arguments: (argument_list
+        (named_argument
+          name: (identifier)
+          value: (number_literal)))))
   (expression_statement
-    (quoted_identifier)))
-
-================================================================================
-unsigned numbers with f and d suffixes
-================================================================================
-
-1;
-2.5;
-.5;
-1e10;
-1.2e-3;
-3f;
-4d;
-5.0F;
-6.0D;
-
---------------------------------------------------------------------------------
-
-(source_file
+    (call_expression
+      function: (identifier)
+      arguments: (argument_list
+        (named_argument
+          name: (identifier)
+          value: (number_literal))
+        (number_literal))))
   (expression_statement
-    (number_literal))
-  (expression_statement
-    (number_literal))
-  (expression_statement
-    (number_literal))
-  (expression_statement
-    (number_literal))
-  (expression_statement
-    (number_literal))
-  (expression_statement
-    (number_literal))
-  (expression_statement
-    (number_literal))
-  (expression_statement
-    (number_literal))
-  (expression_statement
-    (number_literal)))
-
-================================================================================
-unary minus is not part of number token
-================================================================================
-
--1;
-
---------------------------------------------------------------------------------
-
-(source_file
-  (expression_statement
-    (unary_expression
-      (number_literal))))
-
-================================================================================
-date literal
-================================================================================
-
-DATE '2020-01-15';
-
---------------------------------------------------------------------------------
-
-(source_file
-  (expression_statement
-    (date_literal
-      (string_literal))))
-
-================================================================================
-timestamp literal
-================================================================================
-
-TIMESTAMP '2020-01-15 10:00:00';
-
---------------------------------------------------------------------------------
-
-(source_file
-  (expression_statement
-    (timestamp_literal
-      (string_literal))))
-
-================================================================================
-interval year to month
-================================================================================
-
-INTERVAL '1-2' YEAR TO MONTH;
-
---------------------------------------------------------------------------------
-
-(source_file
-  (expression_statement
-    (interval_literal
-      (string_literal)
-      (interval_qualifier))))
-
-================================================================================
-interval day to second with precision
-================================================================================
-
-INTERVAL '1 2:3:4' DAY(2) TO SECOND(3);
-
---------------------------------------------------------------------------------
-
-(source_file
-  (expression_statement
-    (interval_literal
-      (string_literal)
-      (interval_qualifier
+    (call_expression
+      function: (identifier)
+      arguments: (argument_list
         (number_literal)
-        (number_literal)))))
+        (named_argument
+          name: (identifier)
+          value: (number_literal))))))
 
 ================================================================================
-bind variable named
+qualified_expression: OTHERS choice
 ================================================================================
 
-:emp_id;
+T(OTHERS => 1);
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (bind_variable)))
+    (qualified_expression
+      type: (identifier)
+      (others_choice
+        value: (number_literal)))))
 
 ================================================================================
-bind variable positional
+qualified_expression: indexed choice
 ================================================================================
 
-:1;
+T(1 => 2);
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (bind_variable)))
+    (qualified_expression
+      type: (identifier)
+      (indexed_choice
+        index: (number_literal)
+        value: (number_literal)))))
 
 ================================================================================
-inquiry directive
+qualified_expression: FOR iterator form
 ================================================================================
 
-$$PLSQL_UNIT;
+T(FOR i IN 1..n => i);
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (inquiry_directive)))
+    (qualified_expression
+      type: (identifier)
+      (iterator_choice
+        iterator: (iterator
+          iterand: (iterand_decl
+            name: (identifier))
+          controls: (iteration_control_sequence
+            (qual_iteration_control
+              (iteration_control
+                (stepped_control
+                  low: (number_literal)
+                  high: (identifier))))))
+        value: (identifier)))))
 
 ================================================================================
-line comment is extra
+qualified_expression: FOR iterator INDEX form
 ================================================================================
 
-1; -- trailing comment
-2;
+T(FOR i IN 1..5 INDEX i/2 => i);
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (number_literal))
-  (expression_statement
-    (number_literal)))
+    (qualified_expression
+      type: (identifier)
+      (iterator_choice
+        iterator: (iterator
+          iterand: (iterand_decl
+            name: (identifier))
+          controls: (iteration_control_sequence
+            (qual_iteration_control
+              (iteration_control
+                (stepped_control
+                  low: (number_literal)
+                  high: (number_literal))))))
+        index: (binary_expression
+          left: (identifier)
+          right: (number_literal))
+        value: (identifier)))))
 
 ================================================================================
-block comment via external scanner
+qualified_expression: positional then OTHERS
 ================================================================================
 
-BEGIN /* block comment */ NULL; END;
-
---------------------------------------------------------------------------------
-
-(source_file
-  (block
-    (statement
-      (null_statement))))
-
-================================================================================
-unterminated block comment recovery
-================================================================================
-
-BEGIN /* never closed
-NULL; END;
-
---------------------------------------------------------------------------------
-
-(source_file
-  (block
-    (ERROR
-      (identifier)
-      (identifier))
-    (statement
-      (null_statement))))
-
-================================================================================
-reserved word SELECT is not identifier
-================================================================================
-
-SELECT;
-
---------------------------------------------------------------------------------
-
-(source_file
-  (ERROR))
-
-================================================================================
-named float constants are ordinary identifiers (L20)
-================================================================================
-
-BINARY_FLOAT_NAN;
-BINARY_FLOAT_INFINITY;
-BINARY_DOUBLE_NAN;
-BINARY_DOUBLE_INFINITY;
+T(1, OTHERS => 2);
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (identifier))
-  (expression_statement
-    (identifier))
-  (expression_statement
-    (identifier))
-  (expression_statement
-    (identifier)))
+    (qualified_expression
+      type: (identifier)
+      (number_literal)
+      (others_choice
+        value: (number_literal)))))
 
 ================================================================================
-boolean and null literals
+MEMBER OF and IS NAN (E13)
 ================================================================================
 
-TRUE;
-FALSE;
-x = NULL;
+a MEMBER OF b;
+x IS NAN;
+y IS NOT INFINITE;
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (boolean_literal))
+    (member_of_expression
+      left: (identifier)
+      right: (identifier)))
   (expression_statement
-    (boolean_literal))
+    (is_nan_expression
+      left: (identifier)))
+  (expression_statement
+    (is_infinite_expression
+      left: (identifier))))
+
+================================================================================
+dblink in postfix chain then call (D15)
+================================================================================
+
+f@dblink();
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (call_expression
+      function: (database_link_reference
+        object: (identifier)
+        link: (identifier))
+      arguments: (argument_list))))
+
+================================================================================
+outer join operator postfix
+================================================================================
+
+col(+);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (outer_join_operator
+      column: (identifier))))
+
+================================================================================
+member and attribute postfix chain
+================================================================================
+
+a.b.c;
+c%FOUND;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (member_expression
+      object: (member_expression
+        object: (identifier)
+        name: (identifier))
+      name: (identifier)))
+  (expression_statement
+    (attribute_reference
+      object: (identifier)
+      attribute: (identifier))))
+
+================================================================================
+trigger conditional predicates
+================================================================================
+
+INSERTING;
+UPDATING;
+UPDATING(col);
+DELETING;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (conditional_predicate))
+  (expression_statement
+    (conditional_predicate))
+  (expression_statement
+    (conditional_predicate
+      column: (identifier)))
+  (expression_statement
+    (conditional_predicate)))
+
+================================================================================
+COMPARE multi-operand forms: BETWEEN LIKE IN IS NULL
+================================================================================
+
+x BETWEEN 1 AND 2;
+x NOT LIKE y ESCAPE z;
+x IN (1, 2);
+x IS NULL;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (between_expression
+      left: (identifier)
+      low: (number_literal)
+      high: (number_literal)))
+  (expression_statement
+    (like_expression
+      left: (identifier)
+      pattern: (identifier)
+      escape: (identifier)))
+  (expression_statement
+    (in_expression
+      left: (identifier)
+      right: (in_list
+        (number_literal)
+        (number_literal))))
+  (expression_statement
+    (is_null_expression
+      left: (identifier))))
+
+================================================================================
+parenthesized expression grouping
+================================================================================
+
+(a + b) * c;
+
+--------------------------------------------------------------------------------
+
+(source_file
   (expression_statement
     (binary_expression
-      (identifier)
-      (null_literal))))
+      left: (parenthesized_expression
+        (binary_expression
+          left: (identifier)
+          right: (identifier)))
+      right: (identifier))))
 
 ================================================================================
-minimal block still works
+name alternation aggregate choice
 ================================================================================
 
-BEGIN NULL; END;
-
---------------------------------------------------------------------------------
-
-(source_file
-  (block
-    (statement
-      (null_statement))))
-
-================================================================================
-case-insensitive keywords
-================================================================================
-
-begin null; end;
-
---------------------------------------------------------------------------------
-
-(source_file
-  (block
-    (statement
-      (null_statement))))
-
-================================================================================
-longest-match multi-char delimiters
-================================================================================
-
-a <= b;
-c >= d;
-i || j;
-k ** m;
-p <> q;
-r != s;
+T(a | b => 1);
 
 --------------------------------------------------------------------------------
 
 (source_file
   (expression_statement
-    (binary_expression
-      (identifier)
-      (identifier)))
-  (expression_statement
-    (binary_expression
-      (identifier)
-      (identifier)))
-  (expression_statement
-    (binary_expression
-      (identifier)
-      (identifier)))
-  (expression_statement
-    (binary_expression
-      (identifier)
-      (identifier)))
-  (expression_statement
-    (binary_expression
-      (identifier)
-      (identifier)))
-  (expression_statement
-    (binary_expression
-      (identifier)
-      (identifier))))
+    (qualified_expression
+      type: (identifier)
+      (alternation_choice
+        index: (identifier)
+        index: (identifier)
+        value: (number_literal)))))

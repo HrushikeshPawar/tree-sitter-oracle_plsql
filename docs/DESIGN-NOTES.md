@@ -18,7 +18,7 @@ under `docs/spec/`.
 | [D6](#d6--wrapped-units) | Wrapped units | Locked | Salvage |
 | [D7](#d7--embedded-sql) | Embedded SQL | Locked (boundary still open) | Salvage; subset in [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14) |
 | [D8](#d8--opaque-literal-tokens) | Opaque literal tokens | Locked | Salvage |
-| [D9](#d9--external-scanner-for-strings) | External scanner for strings / q-strings | Locked (flipped) | [#11](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11) |
+| [D9](#d9--external-scanner-for-strings) | External scanner for strings / q-strings (+ block comments) | Locked (flipped; surface extended) | [#11](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11); extended [#12](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/12) |
 | [D10](#d10--publish-targets-v1) | Publish targets (v1 bindings) | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
 | [D11](#d11--file-type-claim) | File-type claim | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
 | [D12](#d12--node-shape-versioning) | Node-shape versioning | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
@@ -121,11 +121,18 @@ Numeric/string/q-string literal tokens are single opaque tokens (no internal str
 
 ## D9 — External scanner for strings
 
-**Locked (flipped)** 2026-07-16 via [Spike: q-strings — external scanner or pure grammar (D9)](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11).
+**Locked (flipped)** 2026-07-16 via [Spike: q-strings — external scanner or pure grammar (D9)](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11); **scanner surface extended** 2026-07-16 via [Lock spec: 01-lexical.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/12).
 
-String and alternative-quoting (q-string) literals are recognized by an **external scanner** as opaque tokens (consistent with D8). The scanner implements the full Oracle close rule: optional `N`/`n`, optional/required `Q`/`q`, any non-whitespace open delimiter, paired close for `[]{}()<>`, same-char close otherwise, close only terminates when immediately followed by `'`.
+**Scanner owns:**
 
-Asset: `docs/spec/research/spike-q-strings-d9/` (PR #27).
+1. Ordinary string and alternative-quoting (q-string) literals as **opaque tokens** (consistent with D8). Full Oracle close rule: optional `N`/`n`, optional/required `Q`/`q`, any non-whitespace open delimiter, paired close for `[]{}()<>`, same-char close otherwise, close only terminates when immediately followed by `'`.
+2. **Block comments** (`/* … */`), non-nesting — still **extras** (not named tree nodes).
+
+**Pure grammar still owns:** line comments (`--`), whitespace, numbers, identifiers, delimiters, binds, inquiry `$$`, keywords.
+
+MLE `{{…}}` / WRAPPED payloads may grow the scanner later only if a units/directives ticket proves pure grammar insufficient.
+
+Assets: `docs/spec/research/spike-q-strings-d9/` (PR #27); area lock `docs/spec/01-lexical.md`.
 
 ---
 

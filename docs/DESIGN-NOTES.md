@@ -32,6 +32,7 @@ under `docs/spec/`.
 | [D20](#d20--expression-precedence-and-surface) | Expression precedence and Phase-4 surface | Locked | [#26](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/26) |
 | [D21](#d21--program-unit-create-surface) | Program-unit CREATE surface (nodes, clauses, root, call_spec/WRAPPED) | Locked | [#24](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/24) |
 | [D22](#d22--directives-pragmas-and-script-shapes) | Directives, pragmas, and script Phase-7 shapes | Locked | [#34](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/34) |
+| [D23](#d23--queries-highlights-locals-injections-tags) | Queries (highlights / locals / injections / tags) | Locked | [#37](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/37) |
 
 ---
 
@@ -493,6 +494,26 @@ Cross-cutting gist of Phase-7 area shapes (architecture stays [D5](#d5--conditio
 | Recovery | Local CC failure; OUT expr-fragment `$IF` / extra SQL\*Plus provisional pending census (**DIR15**) |
 
 **Area detail:** `docs/spec/07-directives.md` (full **DIR1–DIR15**). Lexical L4/L28/L29; expressions **E22**; root **D21** / **U41**.
+
+---
+
+## D23 — Queries (highlights / locals / injections / tags)
+
+**Locked 2026-07-16** via [Decide: queries design (highlights / locals / injections)](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/37).
+
+v1 consumer-query contract on the locked 01–07 surface (does **not** reopen node shapes):
+
+| Axis | Lock |
+|------|------|
+| Artifact | Area **`docs/spec/08-queries.md`** (Q1–Q11); this section is the index gist only |
+| Ship set | `queries/highlights.scm`, `locals.scm`, `injections.scm`, `tags.scm` — **no** folds/indents in v1 |
+| Injections | File present, **zero** outbound rules; dual-grammar SQL / comment / WRAPPED-MLE inject **not planned** (D7 native SQL; D11 is inbound only) |
+| Highlights | Hybrid keywords (parent-scoped where re-admission matters); SQL spine + token-class in opaque soup; directive-like CC/script; pragma `name` → `@function.builtin`; role-from-parent name sites (D15); nvim-style capture dialect |
+| Locals | Syntactic scopes (block / subprogram / package / loop / exception handler) + definitions + best-effort `@local.reference`; **no** visibility/overload/SQL resolution |
+| Tags | Definition-only outline for CREATE + nested units/types/methods; procedures share `@definition.function` with functions |
+| Stubs | Committed skeleton `.scm` files; full query CI after grammar implementation |
+
+**Area detail:** `docs/spec/08-queries.md`. Consumes D1/D2/D3/D7/D10–D12/D15/D22.
 
 ---
 

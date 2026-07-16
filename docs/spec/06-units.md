@@ -286,7 +286,7 @@ java_call_spec = "LANGUAGE" "JAVA" "NAME" string_literal ;
 | Scanner implementation for MLE `{{…}}` / WRAPPED payload | Implementation; grow D9 scanner only if pure grammar fails (U35/U39) |
 | CREATE LIBRARY / MLE MODULE / ALTER / DROP | Out of v1 claim (U37) |
 | Semantic heading match, editionability match, property exclusivity | Never grammar |
-| Queries (highlights/locals) | After shapes lock — map fog |
+| Queries (highlights/locals/injections/tags) | [08-queries.md](08-queries.md) / **D23** |
 | `grammar.js` implementation | Execution after map |
 
 ---

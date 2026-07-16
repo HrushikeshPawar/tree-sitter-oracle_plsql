@@ -256,7 +256,7 @@ Mid-expression `/` is always **division** (L4) — never invent `script_slash` t
 | Full SQL\*Plus / SQLcl; other `SET` | Map **out of scope** / D17; census may promote small editor set |
 | Named per-pragma productions | Later under **D12** if queries need fields |
 | Semantic static / pragma validation | Map out of scope (no validation) |
-| Queries (highlights/locals/injections) | Map fog — after shapes lock |
+| Queries (highlights/locals/injections/tags) | [08-queries.md](08-queries.md) / **D23** ([#37](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/37)) |
 | `grammar.js` implementation | Execution after map |
 
 ---

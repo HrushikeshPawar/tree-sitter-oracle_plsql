@@ -14,7 +14,7 @@ under `docs/spec/`.
 | [D2](#d2--keywords-and-reserved-words) | Keywords and reserved words | Locked | Salvage; census [#2](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/2) |
 | [D3](#d3--supertypes-and-fields) | Supertypes and fields | Locked (refined) | Salvage; refined in [#5](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5) |
 | [D4](#d4--version-neutral-grammar) | Version-neutral grammar | Locked | Salvage |
-| [D5](#d5--conditional-compilation-envelope) | Conditional compilation envelope | Locked | Salvage |
+| [D5](#d5--conditional-compilation-envelope) | Conditional compilation envelope | Locked (refined) | Salvage; refined in [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
 | [D6](#d6--wrapped-units) | Wrapped units | Locked | Salvage |
 | [D7](#d7--embedded-sql) | Embedded SQL | Locked | [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14) |
 | [D8](#d8--opaque-literal-tokens) | Opaque literal tokens | Locked | Salvage |
@@ -25,6 +25,8 @@ under `docs/spec/`.
 | [D13](#d13--ci-and-private-corpus) | CI and private corpus | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
 | [D14](#d14--recovery-vs-precision-rubric) | Recovery-vs-precision rubric | Locked | [#5](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5) |
 | [D15](#d15--reference-ambiguity-strategy) | Reference-ambiguity strategy (name/call/member/attribute) | Locked | [#13](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13) |
+| [D16](#d16--pragma-shape-and-placement) | Pragma shape and placement | Locked | [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
+| [D17](#d17--minimal-script-layer) | Minimal script layer | Locked | [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
 
 ---
 
@@ -89,9 +91,20 @@ One version-neutral grammar; no per-release grammars. Release-specific syntax is
 
 ## D5 — Conditional compilation envelope
 
-**Locked** (salvage).
+**Locked (refined)** 2026-07-16 via [Decide: directives, pragmas, and script-layer design](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15).
 
-Conditional compilation is parsed as a directive envelope with permissive branch content — never desugared into ordinary `if_statement`.
+| Axis | Lock |
+|------|------|
+| Modeling | **Directive envelope** — never desugared into ordinary `if_statement` |
+| Branch content | **Context-recursive** — arms re-enter the surrounding production; recovery for broken/version-skew arms (not opaque blobs) |
+| Placement (core four) | declaration peer · statement peer · unit/package/type-body item peer · top-level source peer |
+| Arm packing | **One or more** peers per arm |
+| Out (v1) | expression-primary / type-clause fragment `$IF` (recover; census may promote) |
+| Condition | Dedicated **`static_expression`** — thin ladder (`$$`, literals, boolean/relational ops, parens, dotted static-looking calls); slightly over-accept; no semantic static check |
+| `$ERROR` | First-class **`error_directive`**: `$ERROR` + **string literal** + `$END`; **only inside CC arms** |
+| Scanner | **No growth** for `$…` — pure grammar + existing D9 string tokens |
+
+Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `docs/spec/07-directives.md`.
 
 ---
 
@@ -320,6 +333,39 @@ One **`attribute_reference`** for every `base % attr` (cursor attrs, `SQL%…`, 
 
 ---
 
+## D16 — Pragma shape and placement
+
+**Locked 2026-07-16** via [Decide: directives, pragmas, and script-layer design](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15).
+
+| Axis | Lock |
+|------|------|
+| Shape | **Generic only (v1):** `PRAGMA` + name + optional `(args)` — confirms L29 |
+| Named productions | **None** in v1 (additive named forms later under D12 if queries need fields) |
+| Placement | **Declarative peer** · **statement peer** (executable e.g. `INLINE` — S5) · **package/unit item peer** |
+| Unknown / deprecated names | Still parse via generic node (e.g. old `RESTRICT_REFERENCES`) |
+| Semantics | Placement bans and pragma meaning are **out of scope** (no validation) |
+
+Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `docs/spec/07-directives.md`.
+
+---
+
+## D17 — Minimal script layer
+
+**Locked 2026-07-16** via [Decide: directives, pragmas, and script-layer design](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15).
+
+| Axis | Lock |
+|------|------|
+| Breadth | **Minimal:** top-level **`/`** terminator + **`SET DEFINE` / `ON` / `OFF` only** |
+| Root | One grammar root sequences PL/SQL units **and** these script peers — **native**, not injection |
+| `/` vs division | **Terminator** only as top-level script peer; mid-expression `/` remains **division** (L4) |
+| Out (v1) | Full SQL\*Plus/SQLcl; other `SET …`; `PROMPT` / `WHENEVER` / `REM` / `EXIT` / … |
+| Provisional | Census may promote a small editor set (PROMPT/REM/WHENEVER/EXIT); not pre-built |
+| File types | Unchanged [D11](#d11--file-type-claim) — script noise still appears inside claimed PL/SQL extensions |
+
+Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `docs/spec/07-directives.md`.
+
+---
+
 ## Precedence table (Phase 4 — finalize against the manual)
 
 Starting ladder aligned with Oracle PL/SQL Table 3-3 (lowest → highest binding; `call` / `member` are grammar postfix levels beyond the manual table):
@@ -345,7 +391,7 @@ the map methodology.
 - **Old-style outer join `(+)`** and related legacy SQL quirks.
 - **Keyword-as-identifier allowances** in `name` / `member_name` positions (D2).
 - **Broken-but-common legacy patterns** — **do not** special-case as rules; rely on recovery per D14.
-- **SQL*Plus artifacts** (`/` terminator, `SET DEFINE OFF`) — minimal script layer.
+- **SQL*Plus artifacts** (`/` terminator, `SET DEFINE OFF`) — minimal script layer (**D17**).
 - **Database links**, inquiry directives, bind variables.
 - **Conflicts list** as a warning map of genuine ambiguity — resolve with structure/precedence where possible.
 

@@ -130,7 +130,7 @@ The corpus-derived reference grammar (read-only) does **not** treat the two Appe
 
 **Two takeaways for the identifier policy (input to `docs/spec/01-lexical.md`):**
 
-1. **Appendix D's "keywords are usable as identifiers" is not free** in a scanner-based grammar. Each keyword we want usable as a name must be explicitly aliased back to `identifier` in the relevant name rule. The legacy grammar does this narrowly (only where the corpus needed it), not for the whole 227-word set.
+1. **Appendix D's "keywords are usable as identifiers" is not free** in a scanner-based grammar. Each keyword we want usable as a name must be explicitly aliased back to `identifier` in the relevant name rule. The legacy grammar does this narrowly (only where the corpus needed it), not for the whole 252-word set.
 2. **The corpus reaches past Appendix D.** Six words the legacy grammar treats as contextual identifiers (`document`, `content`, `extract`, `last`, `next`, `trim`) are **not in either Appendix D set** — they are SQL functions / collection-method names / XML keywords that appear in identifier-like positions in real code. The identifier policy must decide whether to (a) mirror the legacy narrow, position-specific allow-list, (b) broaden it, or (c) formalize a "contextual keyword" mechanism. That decision belongs to the lexical-spec lock (ticket *Lock spec: 01-lexical.md*) and the reference-ambiguity ticket (*Decide: reference-ambiguity strategy*).
 
 ---

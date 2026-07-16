@@ -24,6 +24,7 @@ under `docs/spec/`.
 | [D12](#d12--node-shape-versioning) | Node-shape versioning | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
 | [D13](#d13--ci-and-private-corpus) | CI and private corpus | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
 | [D14](#d14--recovery-vs-precision-rubric) | Recovery-vs-precision rubric | Locked | [#5](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5) |
+| [D15](#d15--reference-ambiguity-strategy) | Reference-ambiguity strategy (name/call/member/attribute) | Locked | [#13](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13) |
 
 ---
 
@@ -233,6 +234,69 @@ When a ticket faces a recovery-vs-precision fork, answer these in order and stop
 
 ---
 
+## D15 — Reference-ambiguity strategy
+
+**Locked 2026-07-16** via [Decide: reference-ambiguity strategy (name/qualified/call/member)](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13).
+
+Feeds `docs/spec/04-expressions.md` (and name sites in blocks/units). Applies [D14](#d14--recovery-vs-precision-rubric); respects [D3](#d3--supertypes-and-fields) (no `reference` supertype).
+
+### Strategy
+
+**Unified postfix chain** — not competing primaries, not a flattened `reference` node, not a pile of declared conflicts.
+
+1. **Seed primary** (identifier, and other primaries the area specs list: binds, etc.).
+2. **Left-associative postfixes** on that chain:
+   - `.name` → `member_expression`
+   - `%attr` → `attribute_reference`
+   - `(…)` → `call_expression` or (when marked) `qualified_expression` — see below
+   - `@dblink` → database-link reference on the chain (node name locked in area spec; small named node preferred)
+3. **One shared chain everywhere**; **productions restrict which postfixes are legal by context**:
+   - Expression position: full chain.
+   - Name / type-name / exception / end-label sites: seed + `.` only (no call postfix).
+   - `%TYPE` / `%ROWTYPE`: attribute postfix only in type-spec (and related declaration) productions.
+4. **No `qualified_name` competing primary** and **no `reference` supertype** (D3). Dotted names are nested `member_expression` (or the same shape under a name-only production).
+
+### `(…)` identity
+
+| Interior | Node |
+|----------|------|
+| Positional args, empty `()`, or `identifier =>` named args | **`call_expression`** (covers function call, indexing, bare constructor/simple qualified at parse time — identity is semantic) |
+| Unambiguous aggregate markers: `OTHERS =>`, indexed `expr => expr` (non-identifier LHS), `FOR … =>` (iterator / sequence / index-iterator) | **`qualified_expression`** (distinct node) |
+
+- **No** parse-time split into `index_expression` vs `collection_constructor` vs call for unmarked forms ([E9](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/8) / E21).
+- **Bare `f` is never a call.** Only `f()` (empty or non-empty argument list) is `call_expression`. Parameterless function-as-value is a **semantic** resolution fact on a name reference, not a dual CST ([E17](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/8)).
+- **`@dblink` before args:** `f@dblink()` is a `call_expression` whose callee is the database-link reference on `f`.
+
+### `%` attributes
+
+One **`attribute_reference`** for every `base % attr` (cursor attrs, `SQL%…`, `%TYPE`, `%ROWTYPE`). Context limits which attribute names are legal — not parallel node types for “type attribute” vs “cursor attribute.”
+
+### Parentheses (non-call)
+
+- **`parenthesized_expression`:** `(` expression `)` — ordinary grouping only.
+- **Subquery / select-as-expression:** only when the interior **starts with** a claimed SQL query keyword (`SELECT` / `WITH` / … per the embedded-SQL subset). Not an open-paren GLR race against any expression.
+- **Old-style outer join `(+)`:** separate token/postfix on a column ref — not a parenthesized expression.
+- **Multi-value row `(a, b, …)`:** deferred to [Decide: embedded SQL subset boundary](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14) unless pure PL/SQL later forces an expression primary.
+
+### Procedure call statements
+
+- **`procedure_call_statement`** (supertype `statement`) wraps either:
+  - a **`call_expression`** when `(…)` is present, or
+  - a bare name / member / link chain when not (`do_work;`).
+- Do **not** invent a second call-shaped node for statement-only `f(a)`.
+
+### Conflicts
+
+- **None declared** among seed / member / call / attribute / link for this family — structure makes the grammar LR-friendly.
+- Other areas keep their own conflict budget (e.g. CASE expression vs statement; anything [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14) forces). Add a justified conflict later only if a lock finds a true irreducible ambiguity.
+
+### Consumer split
+
+- **Editors / queries:** stable shape — call syntax present or not; dotted/member/attribute structure.
+- **Code intelligence:** name resolution decides variable vs parameterless function/procedure; the CST does not dual-parse bare names as calls.
+
+---
+
 ## Precedence table (Phase 4 — finalize against the manual)
 
 Starting ladder aligned with Oracle PL/SQL Table 3-3 (lowest → highest binding; `call` / `member` are grammar postfix levels beyond the manual table):
@@ -269,10 +333,10 @@ the map methodology.
 
 ### Known pain points
 
-1. `name` vs `qualified_name` vs `member_expression` vs `call_expression` — [#13](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13).
-2. `(expr)` vs `(subquery)` vs row constructor.
+1. `name` vs `qualified_name` vs `member_expression` vs `call_expression` — **resolved** in [D15](#d15--reference-ambiguity-strategy) ([#13](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13)).
+2. `(expr)` vs `(subquery)` vs row constructor — grouping vs subquery **resolved** in [D15](#d15--reference-ambiguity-strategy); multi-value row deferred to [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14).
 3. CASE expression vs CASE statement (`END CASE` vs `END`).
-4. `%TYPE` / `%ROWTYPE` vs cursor attributes (`%FOUND`, …).
+4. `%TYPE` / `%ROWTYPE` vs cursor attributes (`%FOUND`, …) — **resolved** in [D15](#d15--reference-ambiguity-strategy) (single `attribute_reference`).
 
 ---
 

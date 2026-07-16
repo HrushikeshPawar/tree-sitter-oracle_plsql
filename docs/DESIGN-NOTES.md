@@ -29,6 +29,7 @@ under `docs/spec/`.
 | [D17](#d17--minimal-script-layer) | Minimal script layer | Locked | [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
 | [D18](#d18--block-shape-and-flat-declare-section) | Block shape and flat declare section | Locked | [#20](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/20) |
 | [D19](#d19--statement-catalog-case-and-iterator) | Statement catalog, CASE conflict, full iterator | Locked | [#22](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/22) |
+| [D20](#d20--expression-precedence-and-surface) | Expression precedence and Phase-4 surface | Locked | [#26](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/26) |
 
 ---
 
@@ -403,15 +404,38 @@ Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `do
 
 ---
 
-## Precedence table (Phase 4 — finalize against the manual)
+## D20 — Expression precedence and surface
 
-Starting ladder aligned with Oracle PL/SQL Table 3-3 (lowest → highest binding; `call` / `member` are grammar postfix levels beyond the manual table):
+**Locked 2026-07-16** via [Lock spec: 04-expressions.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/26).
+
+| Axis | Lock |
+|------|------|
+| Ladder | Table 3-3 authoritative: `OR < AND < NOT < comparison < (+ \| - \| \|\|) < (* \| /) < unary(+|-) < ** < call < member/%` |
+| Associativity | `**` right; all other binaries left; comparison flat permissive |
+| Drop | Infix `MOD` (function call only) |
+| Root | One recursive `expression`; no typed-family public nonterminals |
+| CASE | One `case_expression`; multi-choice + `dangling_predicate`; one conflict vs `case_statement` (D19) |
+| Call / aggregate | D15 identity; full marked-aggregate interiors; permissive arg/aggregate order |
+| Compare extras | PL/SQL multiset + float `IS` forms **in**; `ANY`/`ALL`/`SOME`/`PRIOR` **out** (D7) |
+| Static | Dedicated `static_expression` for CC only (D5) |
+
+**Area detail:** `docs/spec/04-expressions.md` (full E1–E22). Reference chain **D15**; CASE conflict / shared `iterator` **D19**.
+
+### Precedence table (final)
+
+Lowest → highest binding (`call` / `member` are grammar postfix levels beyond the manual table):
 
 ```
-OR < AND < NOT < comparison (=, <>, LIKE, IN, BETWEEN, IS) < ||, +, - < *, / < unary (+, -) < ** < call < member
+OR < AND < NOT < comparison
+  < ( + | - | || )
+  < ( * | / )
+  < unary(+|-)
+  < **                    -- right-associative
+  < call / index postfix
+  < member (.) / attribute (%)
 ```
 
-Verified against [Operator Precedence](https://docs.oracle.com/en/database/oracle/oracle-database/23/lnpls/expressions.html#GUID-65EAAB52-8E2C-45E1-B004-CA00A942FF0C) (Oracle 23c Table 3-3): `**` is highest (above unary identity/negation); binary `+`, `-`, and `||` share one level; `MOD` is a function, not a binary operator on this ladder. Expressions lock should still re-check the current R26 page when implementing.
+Verified against R26 Table 3-3 (inventory §2–§3): `**` above unary; binary `+`, `-`, and `||` same level; no infix `MOD`.
 
 ---
 

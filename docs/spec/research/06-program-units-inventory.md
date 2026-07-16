@@ -90,10 +90,10 @@ plsql_function_source =
     [ "(" parameter_declaration { "," parameter_declaration } ")" ]
     "RETURN" datatype
     { function_property }          -- zero or more, any order (diagram: choice repeat)
-    ( "IS" | "AS" )
-    ( [ declare_section ] body
-    | call_spec
-    | /* AGGREGATE form ends without separate body — see aggregate_clause */
+    ( ( "IS" | "AS" ) ( [ declare_section ] body | call_spec )
+    | /* AGGREGATE form: properties include aggregate_clause; no IS/AS body
+         (published examples). R26 railroad still shows IS|AS after the
+         property bag — model choice is U5. */
     )
     ";" ;
 ```
@@ -119,7 +119,7 @@ From `plsql_function_source` diagram, each may appear zero or more times in any 
 
 1. **PL/SQL implementation:** optional `declare_section` + `body` (`BEGIN`…`END` [name] `;` nested inside — body production already carries its terminator pattern from block inventory; the unit-level `;` closes the CREATE).
 2. **Call specification:** Java / C / MLE (§9).
-3. **Aggregate:** `AGGREGATE USING implementation_type` supplies the ODCI implementation type; examples omit a PL/SQL body (`PARALLEL_ENABLE AGGREGATE USING SecondMaxImpl`).
+3. **Aggregate:** `AGGREGATE USING implementation_type` is a `function_property`; published examples end the unit there with **no** `IS`/`AS` body (`PARALLEL_ENABLE AGGREGATE USING SecondMaxImpl`). The R26 `plsql_function_source` railroad still draws `{ IS | AS } { body | call_spec }` after the property bag — treat railroad-vs-examples tension as **U5**.
 
 Return `datatype` cannot carry length/precision/scale or `NOT NULL` (semantic); grammar may still accept a general `datatype` (recovery).
 

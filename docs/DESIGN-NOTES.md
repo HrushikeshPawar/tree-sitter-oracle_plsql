@@ -28,6 +28,7 @@ under `docs/spec/`.
 | [D16](#d16--pragma-shape-and-placement) | Pragma shape and placement | Locked | [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
 | [D17](#d17--minimal-script-layer) | Minimal script layer | Locked | [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
 | [D18](#d18--block-shape-and-flat-declare-section) | Block shape and flat declare section | Locked | [#20](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/20) |
+| [D19](#d19--statement-catalog-case-and-iterator) | Statement catalog, CASE conflict, full iterator | Locked | [#22](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/22) |
 
 ---
 
@@ -385,6 +386,23 @@ Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `do
 
 ---
 
+## D19 — Statement catalog, CASE conflict, full iterator
+
+**Locked 2026-07-16** via [Lock spec: 03-statements.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/22).
+
+| Axis | Lock |
+|------|------|
+| Catalog | Flat `statement` choice; **`procedure_call_statement`** first-class (**D15**); collection mutators statement-level; executable generic **`pragma_statement`** peer (**D16**) |
+| CASE | **One** declared conflict `case_expression` ↔ `case_statement`; closers **`END`** vs **`END CASE`** [label]; statement WHEN parity (multi-choice + dangling); block `END` [name] is separate |
+| Iterator | **Full R26** controls in v1; shared `iterator` with qualified expressions; one `for_loop_statement`; classic cursor FOR **unified** (no second public node) |
+| Recovery looseness | Empty IF/CASE arms; permissive REVERSE / PAIRS mix / dangling predicates / RETURN expr / PIPE ROW placement / FORALL USING — semantic bans not grammar-enforced ([D14](#d14--recovery-vs-precision-rubric)) |
+| Assignment | Dedicated `assignment_target` on **D15** chain — not free expression LHS |
+| SQL entry | Keyword-led dispatch; TCL structured; DML depth **D7** (not re-litigated here) |
+
+**Area detail:** `docs/spec/03-statements.md` (full S1–S43). Expressions lock owns `case_expression` node detail and shares `iterator` / the S8 conflict.
+
+---
+
 ## Precedence table (Phase 4 — finalize against the manual)
 
 Starting ladder aligned with Oracle PL/SQL Table 3-3 (lowest → highest binding; `call` / `member` are grammar postfix levels beyond the manual table):
@@ -423,7 +441,7 @@ the map methodology.
 
 1. `name` vs `qualified_name` vs `member_expression` vs `call_expression` — **resolved** in [D15](#d15--reference-ambiguity-strategy) ([#13](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13)).
 2. `(expr)` vs `(subquery)` vs row constructor — grouping vs subquery **resolved** in [D15](#d15--reference-ambiguity-strategy); multi-value row **out** as free primary in v1 per [D7](#d7--embedded-sql).
-3. CASE expression vs CASE statement (`END CASE` vs `END`).
+3. CASE expression vs CASE statement (`END CASE` vs `END`) — **resolved** in [D19](#d19--statement-catalog-case-and-iterator) ([#22](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/22)); one declared conflict; bare `END` / `END name` remain block/unit closers.
 4. `%TYPE` / `%ROWTYPE` vs cursor attributes (`%FOUND`, …) — **resolved** in [D15](#d15--reference-ambiguity-strategy) (single `attribute_reference`).
 
 ---

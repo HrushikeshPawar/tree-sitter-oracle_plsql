@@ -4,7 +4,7 @@
  *
  * Ordinary: [N|n]? ' ( '' | [^'] )* '
  * Q-string: [N|n]? [Q|q] ' <open> <text> <close> '
- *   open: any non-(space|tab|CR|LF) character
+ *   open: any non-(space|tab|CR|LF) character (Oracle allows open=='\'')
  *   close: matching bracket for [ { ( <  else same as open
  *   text: any chars; a close char ends the literal only when followed by '
  */

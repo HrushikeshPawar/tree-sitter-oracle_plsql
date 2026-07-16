@@ -21,6 +21,8 @@ sql_in_q	ok	q'!SELECT * FROM t WHERE x = 'y'!'
 # content ending with delimiter char — pure regex encoding struggles
 content_ends_delim	ok	q'!x!!'
 # pure-grammar miss targets (arbitrary delimiters outside common set)
+# Oracle SQLRF: quote_delimiter may be a single quotation mark
+quote_delim	ok	q'''hello'''
 arb_at	ok	q'@hello@'
 arb_tilde	ok	q'~hello~'
 arb_x	ok	q'xhellox'

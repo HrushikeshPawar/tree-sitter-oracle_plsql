@@ -17,7 +17,7 @@ Two minimal tree-sitter grammars that only parse one literal per file:
 | **A — Pure grammar** | `pure/` | `token(choice(...))` of fixed delimiter regexes (ref-style set: paired `[]{}()<>` + same `!#\|/"`) |
 | **B — External scanner** | `scanner/` | `externals` for ordinary + q-string; `src/scanner.c` implements full Oracle close rule |
 
-Shared corpus: `corpus/cases.tsv` (32 cases).  
+Shared corpus: `corpus/cases.tsv` (33 cases).  
 One-command runner: `bash docs/spec/research/spike-q-strings-d9/run-spike.sh`  
 Latest matrix: `results.tsv`.
 
@@ -26,17 +26,17 @@ Latest matrix: `results.tsv`.
 From the lexical inventory / SQL text-literal diagram:
 
 - Form: `[N\|n]? [Q\|q] ' <open> <text> <close> '`
-- Open = any non-whitespace character (space/tab/CR/LF forbidden as delimiter)
+- Open = any non-whitespace character (space/tab/CR/LF forbidden as delimiter). Oracle **allows** open/`close` to be `'` itself (SQLRF text-literal note); pure grammar does not include that alt.
 - Close = matching `]` `}` `)` `>` when open is `[` `{` `(` `<`; else close = open
 - Text may contain the close character **unless** it is immediately followed by `'`
 - Ordinary strings remain `[N\|n]? ' ('' \| [^'])* '`
 
-## Results (32 cases)
+## Results (33 cases)
 
 | Metric | Pure (common set) | Scanner |
 |--------|-------------------|---------|
-| Match expect | **22 / 32** | **32 / 32** |
-| `pure_gap` (Oracle-ok, scanner-ok, pure-miss) | **10** | — |
+| Match expect | **22 / 33** | **33 / 33** |
+| `pure_gap` (Oracle-ok, scanner-ok, pure-miss) | **11** | — |
 | Wrong-pair / unclosed rejected | yes | yes |
 | Multiline body (`q'!…\n…!'`) | yes | yes |
 | Interior delimiter not before `'` | yes | yes |
@@ -48,7 +48,7 @@ From the lexical inventory / SQL text-literal diagram:
 
 | Kind | Cases | Why pure fails |
 |------|-------|----------------|
-| Arbitrary delimiter outside common set | 9 (`arb_*`, `n_arb_at`) | Not in the enumerated `choice` |
+| Arbitrary delimiter outside common set | 10 (`arb_*`, `n_arb_at`, `quote_delim`) | Not in the enumerated `choice` |
 | Content ends with close delimiter | 1 (`content_ends_delim` = `q'!x!!'`) | Tree-sitter regex has **no negative lookahead**; classic `([^D]\|D[^'])*D'` encoding cannot end the body on a lone `D` before final `D'` |
 
 ### Scanner correctness notes
@@ -109,7 +109,7 @@ Three coherent policies:
 
 ### Option 3 — External scanner for string literals (D9 flips)
 
-- Full Oracle q-string rule in one place; 32/32 on this corpus including arbitrary delimiters and `q'!x!!'`.
+- Full Oracle q-string rule in one place; 33/33 on this corpus including arbitrary delimiters, `'` as delimiter, and `q'!x!!'`.
 - Ordinary strings can live in the same scanner (recommended) or stay regex if carefully ordered.
 - Aligns with D8 (opaque literal tokens) cleanly: one external token type per literal kind.
 - Cost: maintain `scanner.c`, WASM build, slightly higher review bar.

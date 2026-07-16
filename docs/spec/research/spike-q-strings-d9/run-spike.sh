@@ -23,7 +23,10 @@ echo "== generate + build scanner =="
 # Returns ok|err
 parse_one() {
   local dir="$1" src="$2" tmp out
-  tmp="$(mktemp --suffix=.plsql)"
+  # Portable temp path (BSD mktemp has no --suffix).
+  tmp="$(mktemp)"
+  mv "$tmp" "$tmp.plsql"
+  tmp="$tmp.plsql"
   # shellcheck disable=SC2059
   printf '%s' "$src" >"$tmp"
   if out="$(cd "$dir" && tree-sitter parse "$tmp" 2>&1)"; then

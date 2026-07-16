@@ -17,6 +17,7 @@ interior_close_pair	ok	ok	ok	agree
 empty	ok	ok	ok	agree
 sql_in_q	ok	ok	ok	agree
 content_ends_delim	ok	err	ok	pure_gap
+quote_delim	ok	err	ok	pure_gap
 arb_at	ok	err	ok	pure_gap
 arb_tilde	ok	err	ok	pure_gap
 arb_x	ok	err	ok	pure_gap

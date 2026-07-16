@@ -334,9 +334,9 @@ the map methodology.
 ### Known pain points
 
 1. `name` vs `qualified_name` vs `member_expression` vs `call_expression` — **resolved** in [D15](#d15--reference-ambiguity-strategy) ([#13](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13)).
-2. `(expr)` vs `(subquery)` vs row constructor — grouping vs subquery **resolved** in D15; multi-value row deferred to [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14).
+2. `(expr)` vs `(subquery)` vs row constructor — grouping vs subquery **resolved** in [D15](#d15--reference-ambiguity-strategy); multi-value row deferred to [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14).
 3. CASE expression vs CASE statement (`END CASE` vs `END`).
-4. `%TYPE` / `%ROWTYPE` vs cursor attributes (`%FOUND`, …) — **resolved** in D15 (single `attribute_reference`).
+4. `%TYPE` / `%ROWTYPE` vs cursor attributes (`%FOUND`, …) — **resolved** in [D15](#d15--reference-ambiguity-strategy) (single `attribute_reference`).
 
 ---
 

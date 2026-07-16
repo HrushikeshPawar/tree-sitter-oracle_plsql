@@ -1,0 +1,25 @@
+{
+  "grammars": [
+    {
+      "name": "spike_q_pure",
+      "camelcase": "SpikeQPure",
+      "scope": "source.spike_q_pure",
+      "path": ".",
+      "file-types": ["plsql", "sql"]
+    }
+  ],
+  "metadata": {
+    "version": "0.0.0-prototype",
+    "description": "PROTOTYPE pure-grammar q-string spike (D9) — throwaway",
+    "license": "MIT"
+  },
+  "bindings": {
+    "c": false,
+    "go": false,
+    "node": false,
+    "python": false,
+    "rust": false,
+    "swift": false,
+    "zig": false
+  }
+}

@@ -1,0 +1,41 @@
+# id	expect	input
+# expect=ok means fully parses as one literal with no ERROR/MISSING
+# expect=err means should NOT parse cleanly as a complete literal
+paired_bracket	ok	q'[hello]'
+paired_brace	ok	q'{hello}'
+paired_angle	ok	q'<hello>'
+paired_paren	ok	q'(hello)'
+same_bang	ok	q'!hello!'
+same_hash	ok	q'#hello#'
+same_pipe	ok	q'|hello|'
+same_slash	ok	q'/hello/'
+same_dquote	ok	q'"hello"'
+n_prefix	ok	nq'!hello!'
+N_prefix	ok	NQ'!hello!'
+Q_upper	ok	Q'!hello!'
+q_lower	ok	q'!hello!'
+interior_delim_ok	ok	q'!hel!lo!'
+interior_close_pair	ok	q'[hel]lo]'
+empty	ok	q'!!'
+sql_in_q	ok	q'!SELECT * FROM t WHERE x = 'y'!'
+# content ending with delimiter char — pure regex encoding struggles
+content_ends_delim	ok	q'!x!!'
+# pure-grammar miss targets (arbitrary delimiters outside common set)
+# Oracle SQLRF: quote_delimiter may be a single quotation mark
+quote_delim	ok	q'''hello'''
+arb_at	ok	q'@hello@'
+arb_tilde	ok	q'~hello~'
+arb_x	ok	q'xhellox'
+arb_digit	ok	q'0hello0'
+arb_dollar	ok	q'$hello$'
+arb_underscore	ok	q'_hello_'
+arb_colon	ok	q':hello:'
+arb_star	ok	q'*hello*'
+n_arb_at	ok	nq'@hello@'
+# wrong pairing / unclosed → err
+wrong_pair	err	q'[hello}'
+unclosed	err	q'!hello
+# ordinary strings (baseline; both approaches use pure regex)
+ordinary	ok	'hello'
+ordinary_escape	ok	'hel''lo'
+ordinary_n	ok	n'hello'

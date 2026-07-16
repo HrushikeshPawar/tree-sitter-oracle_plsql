@@ -15,7 +15,7 @@ under `docs/spec/`.
 | [D3](#d3--supertypes-and-fields) | Supertypes and fields | Locked (refined) | Salvage; refined in [#5](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5) |
 | [D4](#d4--version-neutral-grammar) | Version-neutral grammar | Locked | Salvage |
 | [D5](#d5--conditional-compilation-envelope) | Conditional compilation envelope | Locked (refined) | Salvage; refined in [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
-| [D6](#d6--wrapped-units) | Wrapped units | Locked | Salvage |
+| [D6](#d6--wrapped-units) | Wrapped units | Locked (refined) | Salvage; refined in [#24](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/24) |
 | [D7](#d7--embedded-sql) | Embedded SQL | Locked (shapes in area spec) | [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14); area [#32](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/32) |
 | [D8](#d8--opaque-literal-tokens) | Opaque literal tokens | Locked | Salvage |
 | [D9](#d9--external-scanner-for-strings) | External scanner for strings / q-strings (+ block comments) | Locked (flipped; surface extended) | [#11](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11); extended [#12](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/12) |
@@ -30,6 +30,7 @@ under `docs/spec/`.
 | [D18](#d18--block-shape-and-flat-declare-section) | Block shape and flat declare section | Locked | [#20](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/20) |
 | [D19](#d19--statement-catalog-case-and-iterator) | Statement catalog, CASE conflict, full iterator | Locked | [#22](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/22) |
 | [D20](#d20--expression-precedence-and-surface) | Expression precedence and Phase-4 surface | Locked | [#26](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/26) |
+| [D21](#d21--program-unit-create-surface) | Program-unit CREATE surface (nodes, clauses, root, call_spec/WRAPPED) | Locked | [#24](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/24) |
 
 ---
 
@@ -113,9 +114,9 @@ Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `do
 
 ## D6 — Wrapped units
 
-**Locked** (salvage).
+**Locked** (salvage; **shapes refined** 2026-07-16 via [Lock spec: 06-units.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/24) — **U38–U40** / [D21](#d21--program-unit-create-surface)).
 
-Wrapped units (`... WRAPPED`) are consumed as an opaque token stream.
+Wrapped units (`… WRAPPED`) are consumed as an **opaque payload**. v1 **accepts** WRAPPED forms. Public outline keeps **unit kind** + **name** when present before `WRAPPED`; payload is never decoded. Scanner growth only if pure grammar cannot delimit the payload (same bar as D9).
 
 ---
 
@@ -449,6 +450,24 @@ OR < AND < NOT < comparison
 ```
 
 Verified against R26 Table 3-3 (inventory §2–§3): `**` above unary; binary `+`, `-`, and `||` same level; no infix `MOD`.
+
+---
+
+## D21 — Program-unit CREATE surface
+
+**Locked 2026-07-16** via [Lock spec: 06-units.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/24).
+
+| Axis | Lock |
+|------|------|
+| CREATE nodes | **Separate** public units: `create_function` / `create_procedure` / `create_package` / `create_package_body` / `create_trigger` / `create_type` / `create_type_body` — not one mega-`create_statement` (**U1**); optional preamble fields per unit (**U2**) |
+| Root | Multi-item **`source_file`**: CREATE units + `wrapped_unit` + anonymous `block` + **D17** script peers (**U41**); trailing `;` on CREATE; `/` is script-only (**U3**) |
+| Properties | **Typed clause nodes** + free `repeat(choice)` per context; separate function vs procedure bags (**U4/U8/U29**); no order/dupe enforcement |
+| Triggers | Four **child kinds** under `create_trigger`; row = optional `FOR EACH ROW`; multi-word timing as **word sequences**; closed R26 event phrases (**U14–U18**) |
+| Type body | **Comma-separated** method list — not package declare_section (**U26**); package body reuses **D18** declare + `initialize_section` (**U10**) |
+| Call spec / WRAPPED | Three named call_spec arms + opaque payloads; WRAPPED in v1 with outline fields (**U34–U40**); no CREATE LIBRARY/MLE MODULE (**U37**) |
+| Recovery | **D14** local failure between top-level items (**U44**); names via **D15** (**U43**) |
+
+**Area detail:** `docs/spec/06-units.md` (full U1–U46). Nested defs / flat declare **D18**; script `/` **D17**; SQL condition depth **D7**.
 
 ---
 

@@ -302,7 +302,7 @@ interval_qualifier =
     | "MINUTE" [ "(" precision ")" ] [ "TO" "SECOND" [ "(" frac_prec ")" ] ]
     | "SECOND" [ "(" precision [ "," frac_prec ] ")" ] ;
 
-precision / frac_prec = integer   -- leading field 0..9 (default 2); fractional seconds 1..9 (default 6)
+precision / frac_prec = integer   -- leading field 1..9 (default 2); fractional seconds 1..9 (default 6)
 ```
 
 Trailing field, when present, must be less significant than leading (semantic restriction).

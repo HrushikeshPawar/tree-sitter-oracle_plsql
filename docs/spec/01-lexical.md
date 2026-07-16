@@ -12,7 +12,7 @@
 - [Spike: q-strings — external scanner or pure grammar (D9)](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11) → `docs/spec/research/spike-q-strings-d9/`
 - Cross-cutting: `docs/DESIGN-NOTES.md` (D1–D3, D8, D9, D14)
 
-**Related tickets:** name-position / reference chain is locked as **D15** in [Decide: reference-ambiguity strategy](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13) (keyword re-admission uses the shared name/postfix surface); script-layer `/` terminator → directives/script; full pragma catalog → directives.
+**Related tickets:** name-position / reference chain is locked as **D15** in [Decide: reference-ambiguity strategy](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13) (keyword re-admission uses the shared name/postfix surface); script-layer `/` terminator and pragma placement → **D17** / **D16** in [Decide: directives, pragmas, and script-layer design](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15).
 
 ---
 
@@ -61,7 +61,7 @@ Deliberation stays on the ticket; this file is the **outcome**. Inventory/spike 
 |----|------|
 | **L1** | Multi-character delimiters take **longest match**: `**`, `\|\|`, `:=`, `=>`, `..`, `<<`, `>>`, `<>`, `!=`, `~=`, `^=`, `<=`, `>=`, `--`, `/*`, `*/`. No whitespace inside a multi-char delimiter. |
 | **L2** | All **four** not-equal spellings are tokens: `<>`, `!=`, `~=`, `^=`. |
-| **L4** | `/` as SQL\*Plus terminator is **not** decided here — deferred to directives/script. In pure PL/SQL, `/` is division only. |
+| **L4** | `/` as SQL\*Plus terminator is **top-level script peer only** ([D17](../DESIGN-NOTES.md#d17--minimal-script-layer)). In pure PL/SQL expressions, `/` is division only. |
 
 Single-character delimiters (from inventory): `+ - * / = < > . , ; ( ) % : @ ' "`.
 
@@ -161,7 +161,7 @@ Ordinary identifier **shape** for bind/inquiry continuations follows L5/L6 (incl
 
 | ID | Lock |
 |----|------|
-| **L29** | Generic form only: `PRAGMA` + name + optional `(…)` argument list. No per-pragma productions in v1 lexical/directives surface until the directives lock expands them. Unknown pragma names still parse. Placement rules → directives area. |
+| **L29** | Generic form only: `PRAGMA` + name + optional `(…)` argument list. No per-pragma productions in v1 ([D16](../DESIGN-NOTES.md#d16--pragma-shape-and-placement)). Unknown pragma names still parse. Placement: declarative · statement · package/unit item peers. |
 
 ---
 
@@ -208,8 +208,8 @@ Supertype membership: all of `string_literal`, `q_string_literal`, `number_liter
 | Item | Where |
 |------|--------|
 | Reference / name / call / member chain (keyword re-admission surface) | **D15** — [Decide: reference-ambiguity strategy](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13) (locked) |
-| SQL\*Plus `/` terminator, script layer | Directives / script lock |
-| Per-pragma semantics and placement | Directives (`07`) |
+| SQL\*Plus `/` terminator, script layer | [D17](../DESIGN-NOTES.md#d17--minimal-script-layer); lock `07-directives` |
+| Per-pragma semantics and placement | [D16](../DESIGN-NOTES.md#d16--pragma-shape-and-placement); lock `07-directives` |
 | MLE `{{…}}`, WRAPPED scanner growth | Units / directives when ticketed |
 | Byte-length and NLS validation | Semantic — never grammar |
 | Implementing `grammar.js` / `scanner.c` | Execution after map |
@@ -236,7 +236,7 @@ Supertype membership: all of `string_literal`, `q_string_literal`, `number_liter
 | L1 | Longest-match multi-char delimiters |
 | L2 | All four not-equal operators |
 | L3 | Comments as extras (not tree nodes) |
-| L4 | SQL\*Plus `/` deferred |
+| L4 | SQL\*Plus `/` top-level script peer only (D17); division in expressions |
 | L5 | Allow `_` start (documented looseness; provisional vs census) |
 | L6 | Unicode letter/digit classes |
 | L7 | No interior `"` / no `""` escape in quoted ids |

@@ -342,8 +342,8 @@ subtype_definition =
     "SUBTYPE" name "IS" base_type
     [ constraint | "CHARACTER" "SET" character_set ]
     [ "NOT" "NULL" ]
-    -- no trailing "TYPE" keyword; ends at next declaration / BEGIN
-    ;
+    ";" ;
+-- no trailing "TYPE" keyword (unlike TYPE … IS …).
 
 constraint =
       precision [ "," scale ]
@@ -352,13 +352,13 @@ constraint =
 ```
 
 - Manual: static expressions allowed in subtype declarations.
-- Subtype diagram in R26 does **not** show a trailing `;` in the img_text extract for `subtype_definition` alone — but in practice subtype declarations are terminated like other declarative items. **Flag B13.**
+- R26 `subtype_definition` img_text omits the trailing `;` (unlike e.g. `constant_declaration`), but real subtype declarations are terminated like every other declarative item. Sketch includes `";"` for consistency; **B13 lean = required yes.**
 
 ### 4.6 Decision flags
 
 | ID | Question | Why it matters | Feeds |
 |----|----------|----------------|-------|
-| **B13** | Subtype trailing `;` required? | Diagram vs real code / other items | Lock: 02-blocks |
+| **B13** | Subtype trailing `;` required? | Diagram omits; real code needs it — **lean yes** (sketch includes) | Lock: 02-blocks |
 | **B14** | One `type_declaration` node (`TYPE name IS …`) with `definition` field vs four top-level rules | D1 + queries | Lock: 02-blocks |
 | **B15** | `TABLE OF` + optional `INDEX BY` as one production vs split assoc/nested | Shared prefix | Lock: 02-blocks |
 | **B16** | Varray spellings: `VARRAY` / `VARYING ARRAY` / `ARRAY` | Completeness | Lock: 02-blocks |

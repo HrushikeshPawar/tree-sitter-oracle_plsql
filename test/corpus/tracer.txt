@@ -1,0 +1,35 @@
+==================
+minimal block: BEGIN NULL; END;
+==================
+
+BEGIN NULL; END;
+
+---
+
+(source_file
+  (block
+    (null_statement)))
+
+==================
+block comment via external scanner
+==================
+
+BEGIN /* block comment */ NULL; END;
+
+---
+
+(source_file
+  (block
+    (null_statement)))
+
+==================
+case-insensitive keywords
+==================
+
+begin null; end;
+
+---
+
+(source_file
+  (block
+    (null_statement)))

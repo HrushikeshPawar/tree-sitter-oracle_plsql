@@ -1,0 +1,38 @@
+# Tracer CI (#38 / D13): generate + build + public corpus on every push/PR.
+# Binding smoke for D10 publish targets lands with the publish-pipeline ticket.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  parse:
+    name: generate · build · corpus
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate parser
+        run: npx tree-sitter generate
+
+      - name: Build native library (includes external scanner)
+        run: npx tree-sitter build
+
+      - name: Corpus + query tests
+        run: npx tree-sitter test

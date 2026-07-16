@@ -17,7 +17,8 @@
         "trg"
       ],
       "injection-regex": "^oracle_plsql$",
-      "class-name": "TreeSitterOraclePlsql"
+      "class-name": "TreeSitterOraclePlsql",
+      "external-files": ["src/scanner.c"]
     }
   ],
   "metadata": {

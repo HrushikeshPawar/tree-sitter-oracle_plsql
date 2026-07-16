@@ -1,5 +1,25 @@
 [
   {
+    "type": "block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "null_statement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "null_statement",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "source_file",
     "named": true,
     "root": true,
@@ -9,14 +29,14 @@
       "required": false,
       "types": [
         {
-          "type": "identifier",
+          "type": "block",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "identifier",
-    "named": true
+    "type": ";",
+    "named": false
   }
 ]

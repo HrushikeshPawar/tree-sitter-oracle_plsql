@@ -10,7 +10,7 @@ is copied here: links, our own summaries, and our own EBNF-ish sketches only
 ```json
 {
   "id": "lexical-units",                  // stable slug, referenced from corpus tests & commits
-  "kind": "lexical | reserved-words | statement | expression | type | unit | directive | sql | legacy-corpus",
+  "kind": "lexical | reserved-words | statement | expression | type | unit | directive | sql | legacy-corpus | reference",
   "source": "https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/lexical-units.html",
   "section": "Lexical Units",             // heading as displayed
   "release": "26",

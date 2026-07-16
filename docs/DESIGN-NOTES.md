@@ -27,6 +27,7 @@ under `docs/spec/`.
 | [D15](#d15--reference-ambiguity-strategy) | Reference-ambiguity strategy (name/call/member/attribute) | Locked | [#13](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13) |
 | [D16](#d16--pragma-shape-and-placement) | Pragma shape and placement | Locked | [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
 | [D17](#d17--minimal-script-layer) | Minimal script layer | Locked | [#15](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15) |
+| [D18](#d18--block-shape-and-flat-declare-section) | Block shape and flat declare section | Locked | [#20](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/20) |
 
 ---
 
@@ -363,6 +364,24 @@ Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `do
 | File types | Unchanged [D11](#d11--file-type-claim) — script noise still appears inside claimed PL/SQL extensions |
 
 Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `docs/spec/07-directives.md`.
+
+---
+
+## D18 — Block shape and flat declare section
+
+**Locked 2026-07-16** via [Lock spec: 02-blocks.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/20).
+
+| Axis | Lock |
+|------|------|
+| Block node | **One** public `block` (anonymous + nested); parent context distinguishes role |
+| Reuse | Public **`body`** (`BEGIN` … handlers … `END` [name] `;`) shared with nested units / package bodies |
+| Labels | `field("label", $.label)*` — no `label_list` |
+| Empty `BEGIN` | **≥1** statement required; empty → recovery ([D14](#d14--recovery-vs-precision-rubric)) |
+| Declare order | **Flat** `repeat1(declaration)` — **no** R26 `item_list_1` / `item_list_2` phase barrier in the grammar |
+| Why flat | Phase barriers punish misordered code with cascading ERROR; each item remains a precise declaration node; preferred order is corpus/doc guidance, not CST structure |
+| Pragmas in declare | Generic `pragma_declaration` peer ([D16](#d16--pragma-shape-and-placement)) |
+
+**Area detail:** `docs/spec/02-blocks.md` (full B1–B38). Units lock reuses `body` / declare shape without re-arguing flat vs two-list.
 
 ---
 

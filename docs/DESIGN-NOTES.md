@@ -145,7 +145,7 @@ Asset: `docs/spec/research/spike-q-strings-d9/` (PR #27).
 
 **Also off:** Java, Zig (unchanged).
 
-**Plan applied in** `tree-sitter.json` → `bindings` (see PR #28).
+**Plan applied in** `tree-sitter.json` → `bindings`.
 
 ---
 
@@ -163,7 +163,7 @@ pks, pkb, pls, plb, pck, prc, fnc, trg
 
 **Not claimed:** `.sql` — collides with generic SQL grammars; editors should keep generic SQL as the default for that extension. Users who store PL/SQL in `.sql` files force-language or inject `oracle_plsql` locally.
 
-**Plan applied in** `tree-sitter.json` → `grammars[0].file-types` (see PR #28).
+**Plan applied in** `tree-sitter.json` → `grammars[0].file-types`.
 
 ---
 
@@ -235,13 +235,13 @@ When a ticket faces a recovery-vs-precision fork, answer these in order and stop
 
 ## Precedence table (Phase 4 — finalize against the manual)
 
-Starting ladder (ref grammar / expressions inventory):
+Starting ladder aligned with Oracle PL/SQL Table 3-3 (lowest → highest binding; `call` / `member` are grammar postfix levels beyond the manual table):
 
 ```
-OR < AND < NOT < comparison (=, <>, LIKE, IN, BETWEEN, IS) < || < +,- < *,/ (MOD) < ** < unary < call < member
+OR < AND < NOT < comparison (=, <>, LIKE, IN, BETWEEN, IS) < ||, +, - < *, / < unary (+, -) < ** < call < member
 ```
 
-Verify against [Operator Precedence](https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/plsql-expressions.html) before implementing; the manual puts `**` highest and `||` between additive and comparison — reconcile in the expressions lock.
+Verified against [Operator Precedence](https://docs.oracle.com/en/database/oracle/oracle-database/23/lnpls/expressions.html#GUID-65EAAB52-8E2C-45E1-B004-CA00A942FF0C) (Oracle 23c Table 3-3): `**` is highest (above unary identity/negation); binary `+`, `-`, and `||` share one level; `MOD` is a function, not a binary operator on this ladder. Expressions lock should still re-check the current R26 page when implementing.
 
 ---
 

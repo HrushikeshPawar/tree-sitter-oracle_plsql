@@ -1,6 +1,8 @@
 # Design notes
 
-Numbered decision index for the locked design spec. Deliberation lives on the map tickets; this file gists the lock and points at the source. Area detail lives under `docs/spec/`.
+Numbered decision index for the locked design spec. Deliberation lives on the map
+tickets; this file gists the lock and points at the source. Area detail lives
+under `docs/spec/`.
 
 **Map:** [Map: Locked design spec for the spec-driven Oracle PL/SQL grammar](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/1)
 
@@ -8,11 +10,121 @@ Numbered decision index for the locked design spec. Deliberation lives on the ma
 
 | ID | Title | Status | Source |
 |----|--------|--------|--------|
-| D1–D9 | Pre-map salvage (naming, reserved words, fields, blocks, opaque literals, q-strings, …) | Partial — cited from inventories; full text not yet restored in-repo | Research inventories; D9 flipped in #11 |
+| [D1](#d1--grammar-name-and-node-naming) | Grammar name and node naming | Locked (refined) | Salvage; refined in [#5](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5) |
+| [D2](#d2--keywords-and-reserved-words) | Keywords and reserved words | Locked | Salvage; census [#2](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/2) |
+| [D3](#d3--supertypes-and-fields) | Supertypes and fields | Locked (refined) | Salvage; refined in [#5](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5) |
+| [D4](#d4--version-neutral-grammar) | Version-neutral grammar | Locked | Salvage |
+| [D5](#d5--conditional-compilation-envelope) | Conditional compilation envelope | Locked | Salvage |
+| [D6](#d6--wrapped-units) | Wrapped units | Locked | Salvage |
+| [D7](#d7--embedded-sql) | Embedded SQL | Locked (boundary still open) | Salvage; subset in [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14) |
+| [D8](#d8--opaque-literal-tokens) | Opaque literal tokens | Locked | Salvage |
+| [D9](#d9--external-scanner-for-strings) | External scanner for strings / q-strings | Locked (flipped) | [#11](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11) |
 | [D10](#d10--publish-targets-v1) | Publish targets (v1 bindings) | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
 | [D11](#d11--file-type-claim) | File-type claim | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
 | [D12](#d12--node-shape-versioning) | Node-shape versioning | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
 | [D13](#d13--ci-and-private-corpus) | CI and private corpus | Locked | [#10](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/10) |
+| [D14](#d14--recovery-vs-precision-rubric) | Recovery-vs-precision rubric | Locked | [#5](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5) |
+
+---
+
+## D1 — Grammar name and node naming
+
+**Locked** (refined 2026-07-16 via [Decide: recovery-vs-precision rubric and node/field conventions](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5)).
+
+- Grammar name is `oracle_plsql`.
+- Node names are `lower_snake_case`, mirroring the manual's terminology where one exists (e.g. `cursor_declaration`, not `cursor_decl`).
+
+**Standing naming rules:**
+
+1. **Public rule names** = manual term, `lower_snake_case`, full words (no abbrevs like `decl` / `stmt` / `expr` unless the manual itself uses them).
+2. **When the manual has no single term**, use the clearest Tree-sitter-style name common in sibling grammars (`binary_expression`, `if_statement`) — document the choice once in the area spec, not ad hoc.
+3. **Hidden rules** (`_foo`) only for pure structure / factoring that must never appear in the tree (no queries, no highlights).
+4. **Keyword tokens** stay anonymous in the tree (matched via `keyword()`, not `$.keyword_begin` nodes) unless a query truly needs to distinguish a specific keyword occurrence — default is **no keyword nodes**.
+5. **`alias(...)` sparingly** — only to unify shapes consumers treat as the same (e.g. CREATE vs nested procedure definition → same `procedure_definition` surface). Never alias away a distinction queries need.
+6. **One concept → one node name** across phases (no `select_stmt` in SQL and `select_statement` in PL/SQL).
+
+---
+
+## D2 — Keywords and reserved words
+
+**Locked** (salvage; evidence in Appendix D census [#2](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/2)).
+
+Keywords are matched case-insensitively via a `keyword()` helper producing `token(prec(1, /regex/))`. Keywords are **not** globally reserved — only Appendix D *reserved words* are excluded from `identifier` contexts, and even then only where it doesn't hurt error recovery (apply [D14](#d14--recovery-vs-precision-rubric)).
+
+---
+
+## D3 — Supertypes and fields
+
+**Locked** (refined 2026-07-16 via [#5](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5)).
+
+### Supertypes
+
+1. **Only five supertypes in v1:** `statement`, `expression`, `declaration`, `type`, `literal`.
+2. Every concrete production of those kinds is a subtype of exactly one of the five.
+3. **Do not add** `unit`, `clause`, `reference`, `sql_statement`, etc. as supertypes for now — ordinary named nodes, or wait until Phase 8 queries prove the need.
+4. **SQL DML** that appears as a PL/SQL statement is under **`statement`** (e.g. `select_statement`, `insert_statement`) — not a separate SQL supertype.
+5. **Program units** (`create_package_*`, standalone procedure/function, triggers, types) are **top-level / unit nodes**, not forced under `statement` or `declaration`, unless they also appear nested as declarations (nested subprogram → `declaration`).
+6. **`literal` covers** string, q-string, number, boolean/null, date/timestamp/interval. Inquiry `$$` defaults to under `literal` if treated as a primary (confirm in `01-lexical`).
+
+### Fields
+
+1. **Core stable field names** (reuse whenever the role matches):  
+   `name`, `end_name`, `condition`, `body`, `parameters`, `arguments`, `type` / `return_type` / `element_type` / `base_type`, `value`, `left` / `right` (binary ops), `operator`, `object`, `target` (assignment/LHS), `label`, `exception`, `handler`, `query` (SQL/cursor), `default` (default value).
+2. **Role over type:** field name describes *role in the parent*, not the child node type. Prefer `field("name", $.identifier)` over inventing `identifier` as a field; prefer `condition` even if the child is a full `expression`.
+3. **Required when present in syntax:** if the construct has a name/condition/body in the manual diagram, expose it as a field.
+4. **No fields for pure punctuation / structural keywords** (`BEGIN`, `;`, `,`, `IS`/`AS` choosers) unless a query must distinguish variants (rare; document when it happens).
+5. **Lists:** wrap multi-item syntax in a named node (`parameter_list`, `argument_list`) — prefer **`field("parameters", $.parameter_list)`** over repeating `field("parameter", …)` unless order-sensitive sparse lists need per-item fields.
+6. **When unsure, field it** — easier to ignore a field in a query than to recover structure later.
+
+---
+
+## D4 — Version-neutral grammar
+
+**Locked** (salvage).
+
+One version-neutral grammar; no per-release grammars. Release-specific syntax is just added, with provenance noting the source section.
+
+---
+
+## D5 — Conditional compilation envelope
+
+**Locked** (salvage).
+
+Conditional compilation is parsed as a directive envelope with permissive branch content — never desugared into ordinary `if_statement`.
+
+---
+
+## D6 — Wrapped units
+
+**Locked** (salvage).
+
+Wrapped units (`... WRAPPED`) are consumed as an opaque token stream.
+
+---
+
+## D7 — Embedded SQL
+
+**Locked direction** (salvage); exact subset still open in [#14](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14).
+
+Embedded SQL is modeled natively (not injected) for the DML subset; anything beyond the subset should fail *locally*. Apply [D14](#d14--recovery-vs-precision-rubric) when drawing the boundary.
+
+---
+
+## D8 — Opaque literal tokens
+
+**Locked** (salvage).
+
+Numeric/string/q-string literal tokens are single opaque tokens (no internal structure).
+
+---
+
+## D9 — External scanner for strings
+
+**Locked (flipped)** 2026-07-16 via [Spike: q-strings — external scanner or pure grammar (D9)](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/11).
+
+String and alternative-quoting (q-string) literals are recognized by an **external scanner** as opaque tokens (consistent with D8). The scanner implements the full Oracle close rule: optional `N`/`n`, optional/required `Q`/`q`, any non-whitespace open delimiter, paired close for `[]{}()<>`, same-char close otherwise, close only terminates when immediately followed by `'`.
+
+Asset: `docs/spec/research/spike-q-strings-d9/` (PR #27).
 
 ---
 
@@ -86,3 +198,85 @@ pks, pkb, pls, plb, pck, prc, fnc, trg
 **Public CI (when added) runs only open artifacts:** generate, `tree-sitter test` / public corpus, and binding smoke for the four D10 publish targets (plus optional wasm). Never uploads or mounts the private tree.
 
 **While corpus access is still pending:** decide tickets remain unblocked; frequency-sensitive cuts stay provisional until census + distillation land (see map Notes).
+
+---
+
+## D14 — Recovery-vs-precision rubric
+
+**Locked 2026-07-16** via [Decide: recovery-vs-precision rubric and node/field conventions](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/5).
+
+Consumer priority is **editors and code intelligence equally**. Later tickets **apply this rubric**; they do not re-argue the consumer priority.
+
+### Principle
+
+Prefer **precision** for syntax we claim to model. Prefer **localized recovery** (not fake-valid rules) for unmodeled or invalid input. **Never invent permissive productions that pretend broken or out-of-scope code is legal.**
+
+### Apply checklist
+
+When a ticket faces a recovery-vs-precision fork, answer these in order and stop at the first decisive step:
+
+1. **Claimed surface?** Is this construct in the full R26 PL/SQL-proper surface, or in the embedded-SQL / script subset we explicitly include?
+   - **Yes** → model it with a precise node shape; do not paper over with recovery or a catch-all.
+   - **No / unknown / deliberately opaque** → envelope or local failure (`ERROR` / `MISSING`), not a fake precise tree.
+
+2. **Valid Oracle vs invalid / broken-legacy?**
+   - **Valid** for that surface → the grammar must accept it (precision wins; loosen only if the manual is ambiguous and real code needs it — document as a deliberate extension).
+   - **Invalid / broken-legacy** → do **not** add a special rule (see salvage audit); rely on Tree-sitter recovery. Revisit only if smoke-corpus recovery is *not* localized.
+
+3. **Cascade risk?** Does the precise rule risk cascading `ERROR` across otherwise-valid siblings/parents?
+   - **Yes, and the construct is out-of-subset or optional trailing junk** → permissive *envelope* or coarse token repeat at that boundary only (still not “broken PL/SQL is valid”).
+   - **Yes, but the construct is in-spec** → fix the grammar (precedence/structure); do not paper with recovery.
+
+4. **Lexical looseness?** Would a looser lexical rule (e.g. `_`-start identifiers, Unicode letters) accept invalid input *and* help recovery without poisoning queries?
+   - Prefer the **manual** when both are easy.
+   - Allow documented looseness only when editors would otherwise mark large valid-looking spans as `ERROR` *and* code intelligence still gets a stable `identifier` (or equivalent) node.
+
+---
+
+## Precedence table (Phase 4 — finalize against the manual)
+
+Starting ladder aligned with Oracle PL/SQL Table 3-3 (lowest → highest binding; `call` / `member` are grammar postfix levels beyond the manual table):
+
+```
+OR < AND < NOT < comparison (=, <>, LIKE, IN, BETWEEN, IS) < ||, +, - < *, / < unary (+, -) < ** < call < member
+```
+
+Verified against [Operator Precedence](https://docs.oracle.com/en/database/oracle/oracle-database/23/lnpls/expressions.html#GUID-65EAAB52-8E2C-45E1-B004-CA00A942FF0C) (Oracle 23c Table 3-3): `**` is highest (above unary identity/negation); binary `+`, `-`, and `||` share one level; `MOD` is a function, not a binary operator on this ladder. Expressions lock should still re-check the current R26 page when implementing.
+
+---
+
+## Salvage audit of `grammar-ref.js`
+
+`grammar-ref.js` was built bottom-up from ~5k proprietary legacy files. It is a
+*catalog of real-world phenomena*. Nothing is copied verbatim; re-derive through
+the map methodology.
+
+### Keep — real-world knowledge the manual lacks
+
+- **`keyword()` case-insensitive helper** and `commaSep` / `commaSep1` utilities.
+- **q-string close semantics** — now owned by external scanner per D9.
+- **Old-style outer join `(+)`** and related legacy SQL quirks.
+- **Keyword-as-identifier allowances** in `name` / `member_name` positions (D2).
+- **Broken-but-common legacy patterns** — **do not** special-case as rules; rely on recovery per D14.
+- **SQL*Plus artifacts** (`/` terminator, `SET DEFINE OFF`) — minimal script layer.
+- **Database links**, inquiry directives, bind variables.
+- **Conflicts list** as a warning map of genuine ambiguity — resolve with structure/precedence where possible.
+
+### Drop / redesign
+
+- `generic_unit` / `generic_group` catch-alls (opaque stream only for D6 wrapped units).
+- Flat ad-hoc top-level / XML/JSON / duplicate call forms shaped only by the corpus.
+
+### Known pain points
+
+1. `name` vs `qualified_name` vs `member_expression` vs `call_expression` — [#13](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13).
+2. `(expr)` vs `(subquery)` vs row constructor.
+3. CASE expression vs CASE statement (`END CASE` vs `END`).
+4. `%TYPE` / `%ROWTYPE` vs cursor attributes (`%FOUND`, …).
+
+---
+
+## Provenance
+
+Rules and tests cite sources in `docs/provenance/manifest.jsonl` — see
+[provenance/README.md](./provenance/README.md).

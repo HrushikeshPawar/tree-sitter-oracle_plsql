@@ -222,7 +222,7 @@ collection_variable_decl =
 
 - Associative arrays may initialize from qualified expressions / function calls (18c+ style).
 - Varray / nested table constructors and copy-from-same-type.
-- `%TYPE` of another collection variable is a third form.
+- `%TYPE` of another collection variable is a third form; the R26 `collection_variable_decl` diagram shows **no** declaration-time initializer on that form (only `:=` on named collection types — not `DEFAULT`).
 
 ### 3.7 Record variable
 
@@ -236,7 +236,7 @@ record_variable_declaration =
     ";" ;
 ```
 
-No field-by-field initializer in this production (use assignment / qualified expression later).
+No declaration-time initializer in the R26 `record_variable_declaration` diagram (type / `%ROWTYPE` / `%TYPE` only). Field defaults live on `field_definition`. Declaration-time qualified expressions appear for **record constants** (`constant_declaration` with a record datatype), not this production.
 
 ### 3.8 Decision flags
 
@@ -281,7 +281,7 @@ assoc_array_type_def =
     "INDEX" "BY"
     ( "PLS_INTEGER" | "BINARY_INTEGER"
     | "VARCHAR2" "(" size ")"
-    | index_datatype                 -- incl. %TYPE / %ROWTYPE-derived index forms
+    | index_datatype                 -- %TYPE / %ROWTYPE forms; must resolve to PLS_INTEGER | BINARY_INTEGER | VARCHAR2(n) (semantic)
     ) ;
 
 varray_type_def =
@@ -295,7 +295,8 @@ nested_table_type_def =
 
 - **Associative array** = `TABLE OF … INDEX BY …` (block/package only; not CREATE TYPE).
 - **Nested table** = `TABLE OF …` without `INDEX BY`.
-- **Varray** size is an integer literal (semantic range 1..2^31−1); grammar can accept a numeric expression/int token.
+- **INDEX BY** may use `%TYPE` / `%ROWTYPE` in the R26 diagram; semantics require the resolved type to be `PLS_INTEGER`, `BINARY_INTEGER`, or `VARCHAR2(n)` (not a record).
+- **Varray** spellings in the R26 railroad: `VARRAY` or `[VARYING] ARRAY` (bare `ARRAY` is diagram-legal; whether the compiler accepts it is **B16**). Size is an integer literal (semantic range 1..2^31−1); grammar can accept a numeric expression/int token.
 - Element type cannot be `REF CURSOR` (semantic); nested table also excludes `NCLOB` (semantic).
 
 ### 4.3 Record type
@@ -331,6 +332,7 @@ rowtype_return =
 ```
 
 - With `RETURN` → strong; without → weak.
+- R26 diagram includes `ref_cursor_type` among `RETURN` alternatives (return type of another REF CURSOR type).
 - `SYS_REFCURSOR` is a predefined weak type name (not defined with this production).
 
 ### 4.5 Subtype

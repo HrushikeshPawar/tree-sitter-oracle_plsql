@@ -30,7 +30,7 @@ Phase 3 surface from the roadmap and ticket question:
 **In scope as structure only (details deferred):**
 
 - Expression interiors of conditions, bounds, targets — [Inventory: expressions](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/8)
-- Full SQL parse of `select_statement` / DML / `MERGE` bodies — [Decide: embedded SQL subset](https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/block.html) / issue #14
+- Full SQL parse of `select_statement` / DML / `MERGE` bodies — [Decide: embedded SQL subset](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/14)
 - Name / call / member disambiguation — [Decide: reference-ambiguity strategy](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/13)
 - Nested block body reuse — already inventoried in [Inventory: blocks and declarations](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/6)
 
@@ -279,20 +279,18 @@ single_expression_control =
 values_of_control =
     "VALUES" "OF"
     ( expression
-    | cursor_source
-    | dynamic_sql_control ) ;
+    | cursor_source ) ;
 
 indices_of_control =
     "INDICES" "OF"
     ( expression
-    | cursor_source
-    | dynamic_sql_control ) ;
+    | cursor_source ) ;
+-- R26 also allows parenthesized cursor_variable: "(" cursor_variable ")"
 
 pairs_of_control =
     "PAIRS" "OF"
     ( expression
-    | cursor_source
-    | dynamic_sql_control ) ;
+    | cursor_source ) ;
 
 cursor_iteration_control =
     "(" (
@@ -306,9 +304,12 @@ dynamic_sql_control =
     "EXECUTE" "IMMEDIATE" dynamic_sql_stmt
     [ "USING" [ "IN" ] bind_argument { "," [ "IN" ] bind_argument } ] ;
 
+-- Shared source for VALUES/INDICES/PAIRS OF (R26 img_text shape).
+-- dynamic_sql and sql_statement / cursor_object require parentheses here;
+-- bare dynamic_sql_control is invalid (only legal inside the parens).
 cursor_source =
-      cursor_object
-    | cursor_variable
+      cursor_variable
+    | "(" cursor_object ")"
     | "(" sql_statement ")"
     | "(" dynamic_sql_control ")" ;
 ```
@@ -616,8 +617,7 @@ execute_immediate_statement =
 forall_statement =
     "FORALL" index "IN" bounds_clause
     [ "SAVE" "EXCEPTIONS" ]
-    dml_statement
-    ";" ;
+    dml_statement ;
 
 bounds_clause =
       lower_bound ".." upper_bound
@@ -630,12 +630,13 @@ dml_statement =
     | update_statement
     | delete_statement
     | merge_statement
-    | execute_immediate_statement ;   -- dynamic DML subset
+    | execute_immediate_statement ;   -- dynamic DML subset; each form carries its own ";"
 ```
 
 Notes:
 
 - **Not** a `LOOP` … `END LOOP` form — single DML (or dynamic DML) per FORALL.
+- R26 `forall_statement` img_text shows a trailing `;` after `dml_statement`, but the DML alternatives (and `execute_immediate_statement`) already terminate with `";"`. Sketch omits an extra outer semicolon to avoid double-`;;` composition; the statement terminator lives on the DML body.
 - Index is implicitly declared; not usable as a general expression target (semantic).
 - `SAVE EXCEPTIONS` continues on DML failures (semantic).
 - Server-only feature (semantic/doc note).

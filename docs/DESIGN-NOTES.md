@@ -31,6 +31,7 @@ under `docs/spec/`.
 | [D19](#d19--statement-catalog-case-and-iterator) | Statement catalog, CASE conflict, full iterator | Locked | [#22](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/22) |
 | [D20](#d20--expression-precedence-and-surface) | Expression precedence and Phase-4 surface | Locked | [#26](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/26) |
 | [D21](#d21--program-unit-create-surface) | Program-unit CREATE surface (nodes, clauses, root, call_spec/WRAPPED) | Locked | [#24](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/24) |
+| [D22](#d22--directives-pragmas-and-script-shapes) | Directives, pragmas, and script Phase-7 shapes | Locked | [#34](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/34) |
 
 ---
 
@@ -108,7 +109,9 @@ One version-neutral grammar; no per-release grammars. Release-specific syntax is
 | `$ERROR` | First-class **`error_directive`**: `$ERROR` + **string literal** + `$END`; **only inside CC arms** |
 | Scanner | **No growth** for `$…` — pure grammar + existing D9 string tokens |
 
-Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `docs/spec/07-directives.md`.
+**Shapes refined** 2026-07-16 via [Lock spec: 07-directives.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/34) — **DIR1–DIR15** / [D22](#d22--directives-pragmas-and-script-shapes): public names, fields, no sixth supertype, `dollar_keyword` tokens.
+
+Full tables: `docs/spec/research/07-directives-design.md`. Area detail: `docs/spec/07-directives.md`.
 
 ---
 
@@ -361,8 +364,9 @@ One **`attribute_reference`** for every `base % attr` (cursor attrs, `SQL%…`, 
 | Placement | **Declarative peer** · **statement peer** (executable e.g. `INLINE` — S5) · **package/unit item peer** |
 | Unknown / deprecated names | Still parse via generic node (e.g. old `RESTRICT_REFERENCES`) |
 | Semantics | Placement bans and pragma meaning are **out of scope** (no validation) |
+| Public names | `pragma_declaration` (declaration) · `pragma_statement` (statement) · `pragma` (unit-item) — shared interior (**DIR10–DIR11** / [D22](#d22--directives-pragmas-and-script-shapes)) |
 
-Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `docs/spec/07-directives.md`.
+Full tables: `docs/spec/research/07-directives-design.md`. Area detail: `docs/spec/07-directives.md`.
 
 ---
 
@@ -378,8 +382,10 @@ Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `do
 | Out (v1) | Full SQL\*Plus/SQLcl; other `SET …`; `PROMPT` / `WHENEVER` / `REM` / `EXIT` / … |
 | Provisional | Census may promote a small editor set (PROMPT/REM/WHENEVER/EXIT); not pre-built |
 | File types | Unchanged [D11](#d11--file-type-claim) — script noise still appears inside claimed PL/SQL extensions |
+| Public names | `script_slash` · `set_define_command` (optional `value` for ON/OFF) |
+| `/` strategy | **One** anonymous `/` token; meaning by production position only — no second scanner token, no newline-only rule (**DIR13** / [D22](#d22--directives-pragmas-and-script-shapes)) |
 
-Full tables: `docs/spec/research/07-directives-design.md`. Area detail: lock `docs/spec/07-directives.md`.
+Full tables: `docs/spec/research/07-directives-design.md`. Area detail: `docs/spec/07-directives.md`.
 
 ---
 
@@ -468,6 +474,25 @@ Verified against R26 Table 3-3 (inventory §2–§3): `**` above unary; binary `
 | Recovery | **D14** local failure between top-level items (**U44**); names via **D15** (**U43**) |
 
 **Area detail:** `docs/spec/06-units.md` (full U1–U46). Nested defs / flat declare **D18**; script `/` **D17**; SQL condition depth **D7**.
+
+---
+
+## D22 — Directives, pragmas, and script shapes
+
+**Locked 2026-07-16** via [Lock spec: 07-directives.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/34).
+
+Cross-cutting gist of Phase-7 area shapes (architecture stays [D5](#d5--conditional-compilation-envelope) / [D16](#d16--pragma-shape-and-placement) / [D17](#d17--minimal-script-layer)):
+
+| Axis | Lock |
+|------|------|
+| CC nodes | `conditional_compilation_directive` + `elsif_directive_clause`; `body` / `else_body` fields (no then/else container nodes); `static_expression`; arm-only `error_directive` with `message` (**DIR1–DIR2**, **DIR4–DIR8**) |
+| Supertypes | **No** sixth supertype; CC listed by name in each core-four choice; dual pragma names for declaration/statement (**DIR3**) |
+| `$` tokens | Pure-grammar `dollar_keyword` closed set (`$IF`…`$ERROR`); no scanner growth (**DIR9**) |
+| Pragmas | Generic interior → `pragma_declaration` · `pragma_statement` · unit-item `pragma` (**DIR10–DIR11**) |
+| Script | `script_slash` + `set_define_command`; one `/` token, top-level terminator vs expression division by position (**DIR12–DIR14**) |
+| Recovery | Local CC failure; OUT expr-fragment `$IF` / extra SQL\*Plus provisional pending census (**DIR15**) |
+
+**Area detail:** `docs/spec/07-directives.md` (full **DIR1–DIR15**). Lexical L4/L28/L29; expressions **E22**; root **D21** / **U41**.
 
 ---
 

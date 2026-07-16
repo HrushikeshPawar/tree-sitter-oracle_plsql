@@ -1,8 +1,8 @@
 # Directives, pragmas, and script-layer design (D5 / D16 / D17)
 
 **Ticket:** [Decide: directives, pragmas, and script-layer design](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/15)  
-**Status:** Locked 2026-07-16  
-**Applies:** Phase 7 / `docs/spec/07-directives.md` lock  
+**Status:** Locked 2026-07-16 (architecture); area shapes locked in [Lock spec: 07-directives.md](https://github.com/HrushikeshPawar/tree-sitter-oracle_plsql/issues/34) → `docs/spec/07-directives.md`  
+**Applies:** Phase 7 / `docs/spec/07-directives.md` (locked)  
 **Rubric:** [D14](../../DESIGN-NOTES.md#d14--recovery-vs-precision-rubric) · consumer priority: both equally  
 **Cross-links:** [D5](../../DESIGN-NOTES.md#d5--conditional-compilation-envelope) · [D9](../../DESIGN-NOTES.md#d9--external-scanner-for-strings) · [D11](../../DESIGN-NOTES.md#d11--file-type-claim) · L28/L29 in [01-lexical.md](../01-lexical.md)
 

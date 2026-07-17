@@ -1,41 +1,44 @@
 /**
  * Declaration-site types, type definitions, and D15 name-site chains.
- * Spec: docs/spec/02-blocks.md B13–B18, B24, B28–B31; DESIGN-NOTES D15.
+ * Spec: docs/spec/02-blocks.md B13–B18, B24, B28–B31; DESIGN-NOTES D3/D15.
  */
 
 import { PREC, keyword, commaSep1 } from "./helpers.js";
 
-/** @param {any} $ */
-export function typeRules($) {
+export function typeRules() {
   return {
     // ------------------------------------------------------------------
-    // D3 supertype `type` — type_spec + parameter_type
+    // D3 live supertype `type` = type_spec | parameter_type
     // ------------------------------------------------------------------
-
-    // D3 conceptual type family = type_spec | parameter_type (not a live
-    // tree-sitter supertype — see grammar.js supertypes comment).
-    // Fields name type_spec / parameter_type for role-specific CST.
-
-    // Full declaration-site types (B24 / B28–B30).
-    type_spec: ($) =>
+    // Prefer type_spec when both match (bare names) so declare-site fields
+    // that use $.type get full precision forms when present.
+    type: ($) =>
       choice(
-        // B28 — %TYPE / %ROWTYPE as attribute_reference (name-site object).
+        prec.dynamic(1, $.type_spec),
+        prec.dynamic(0, $.parameter_type),
+      ),
+
+    // Shared spine: attr | REF name | name (B24 / B28).
+    _type_core: ($) =>
+      choice(
         alias($._name_site_attribute, $.attribute_reference),
         seq(keyword("ref"), $._name_site),
+        $._name_site,
+      ),
+
+    // Full declaration-site types (+ optional precision on named types).
+    type_spec: ($) =>
+      choice(
+        $._type_core,
+        // Constrained named type: name_site (n[, m] [CHAR|BYTE])
         prec.right(
           PREC.CALL + 1,
           seq($._name_site, $._type_precision),
         ),
-        $._name_site,
       ),
 
     // B24 — unconstrained formals: no inline precision parens.
-    parameter_type: ($) =>
-      choice(
-        alias($._name_site_attribute, $.attribute_reference),
-        seq(keyword("ref"), $._name_site),
-        $._name_site,
-      ),
+    parameter_type: ($) => $._type_core,
 
     // ------------------------------------------------------------------
     // D15 name-site: seed + `.` only (no call / no bare expression)
@@ -67,6 +70,20 @@ export function typeRules($) {
           field("object", $._name_site),
           "%",
           field("attribute", $._attribute_name),
+        ),
+      ),
+
+    // %ROWTYPE only (record_variable_declaration).
+    _rowtype_attribute: ($) =>
+      prec(
+        PREC.MEMBER + 1,
+        seq(
+          field("object", $._name_site),
+          "%",
+          field(
+            "attribute",
+            alias(keyword("rowtype"), $.identifier),
+          ),
         ),
       ),
 
@@ -115,7 +132,7 @@ export function typeRules($) {
       seq(
         $._kw_table,
         $._kw_of,
-        field("element_type", $.type_spec),
+        field("element_type", $.type),
         optional(seq($._kw_not, $._kw_null)),
       ),
 
@@ -124,7 +141,7 @@ export function typeRules($) {
         $._table_of_prefix,
         $._kw_index,
         $._kw_by,
-        field("index_type", $.type_spec),
+        field("index_type", $.type),
       ),
 
     nested_table_type_body: ($) => $._table_of_prefix,
@@ -141,7 +158,7 @@ export function typeRules($) {
         field("size", $.number_literal),
         ")",
         $._kw_of,
-        field("element_type", $.type_spec),
+        field("element_type", $.type),
         optional(seq($._kw_not, $._kw_null)),
       ),
 
@@ -159,7 +176,7 @@ export function typeRules($) {
     field_definition: ($) =>
       seq(
         field("name", $.identifier),
-        field("type", $.type_spec),
+        field("type", $.type),
         optional($._not_null_default),
       ),
 
@@ -169,7 +186,7 @@ export function typeRules($) {
         keyword("ref"),
         $._kw_cursor,
         optional(
-          seq(keyword("return"), field("return_type", $.type_spec)),
+          seq(keyword("return"), field("return_type", $.type)),
         ),
         ";",
       ),
@@ -180,7 +197,7 @@ export function typeRules($) {
         $._kw_subtype,
         field("name", $.identifier),
         $._kw_is,
-        field("base_type", $.type_spec),
+        field("base_type", $.type),
         optional($._subtype_constraint),
         optional(seq($._kw_not, $._kw_null)),
         ";",

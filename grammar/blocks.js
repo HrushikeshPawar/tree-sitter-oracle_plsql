@@ -5,8 +5,7 @@
 
 import { keyword } from "./helpers.js";
 
-/** @param {any} $ */
-export function blockRules($) {
+export function blockRules() {
   return {
     // ------------------------------------------------------------------
     // Blocks (B1–B5, D18)

@@ -12,7 +12,7 @@ import {
 } from "./helpers.js";
 
 /** @param {any} $ */
-export function expressionRules($) {
+export function expressionRules() {
   return {
     // ------------------------------------------------------------------
     // Expression root (E11 / D20) — one recursive public `expression`

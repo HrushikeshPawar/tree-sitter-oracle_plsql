@@ -4,13 +4,12 @@
  *
  * Collection/cursor variables share the name+type surface with scalars and
  * parse as variable_declaration (no separate public nodes without types).
- * record_variable_declaration covers the distinguishable %TYPE/%ROWTYPE form.
+ * record_variable_declaration is only the distinguishable %ROWTYPE form.
  */
 
 import { keyword, commaSep1 } from "./helpers.js";
 
-/** @param {any} $ */
-export function declarationRules($) {
+export function declarationRules() {
   return {
     // ------------------------------------------------------------------
     // declaration choice (B6–B11) — keyword-led first, then name-led
@@ -39,19 +38,17 @@ export function declarationRules($) {
         $.variable_declaration,
       ),
 
-    // Scalar + constant (B9–B10, B12). One production: optional CONSTANT,
-    // optional grouped NOT NULL + initializer (expression in `default`).
+    // Scalar + constant (B9–B10, B12). `type` field uses live D3 supertype.
     variable_declaration: ($) =>
       seq(
         field("name", $.identifier),
         optional(keyword("constant")),
-        field("type", $.type_spec),
+        field("type", $.type),
         optional($._not_null_default),
         ";",
       ),
 
-    // Distinguishable record/collection %attr form (B9 catalog).
-    // Higher prec so `x t%ROWTYPE;` is not bare variable_declaration.
+    // B9 — record variable with %ROWTYPE only (not every %attr).
     record_variable_declaration: ($) =>
       prec(
         2,
@@ -59,7 +56,7 @@ export function declarationRules($) {
           field("name", $.identifier),
           field(
             "type",
-            alias($._name_site_attribute, $.attribute_reference),
+            alias($._rowtype_attribute, $.attribute_reference),
           ),
           ";",
         ),
@@ -93,7 +90,7 @@ export function declarationRules($) {
       seq(
         $._cursor_heading,
         keyword("return"),
-        field("type", $.type_spec),
+        field("type", $.type),
         ";",
       ),
 
@@ -101,7 +98,7 @@ export function declarationRules($) {
     cursor_definition: ($) =>
       seq(
         $._cursor_heading,
-        optional(seq(keyword("return"), field("type", $.type_spec))),
+        optional(seq(keyword("return"), field("type", $.type))),
         $._kw_is,
         field("query", $.cursor_query),
         ";",
@@ -143,7 +140,7 @@ export function declarationRules($) {
         field("name", $.identifier),
         optional(field("parameters", $.parameter_list)),
         keyword("return"),
-        field("return_type", $.type_spec),
+        field("return_type", $.type),
       ),
 
     // B23 — nested function modifiers only.
@@ -190,7 +187,8 @@ export function declarationRules($) {
         seq(field("call_spec", $.call_spec), ";"),
       ),
 
-    // B26 — coarse LANGUAGE … envelope to `;` (deep call_spec → units).
+    // B26 — coarse LANGUAGE … envelope (deep call_spec → units).
+    // Pieces stop before the definition's trailing `;`.
     call_spec: ($) =>
       seq(
         keyword("language"),
@@ -211,12 +209,9 @@ export function declarationRules($) {
       ),
 
     // Full formal parameters (IN / OUT / IN OUT / NOCOPY).
+    // List node + bare parameter_declaration children (D3).
     parameter_list: ($) =>
-      seq(
-        "(",
-        optional(commaSep1(field("parameters", $.parameter_declaration))),
-        ")",
-      ),
+      seq("(", optional(commaSep1($.parameter_declaration)), ")"),
 
     parameter_declaration: ($) =>
       seq(
@@ -249,35 +244,5 @@ export function declarationRules($) {
           ),
         ),
       ),
-
-    // ------------------------------------------------------------------
-    // Opaque SQL / paren spans (shared delimiter policy)
-    // ------------------------------------------------------------------
-
-    // Balanced `( … )` with nested parens (no `;` restriction inside).
-    _balanced_parens: ($) =>
-      seq("(", optional($._opaque_inside_parens), ")"),
-
-    _opaque_inside_parens: ($) =>
-      repeat1(
-        choice(
-          /[^()]+/,
-          $._balanced_parens,
-        ),
-      ),
-
-    // Opaque text that must not swallow a statement/decl terminator `;`.
-    // Used by cursor_query; parenthesized SELECT sources use
-    // _opaque_inside_parens via _balanced_parens / legacy name below.
-    _opaque_sql_no_semi: ($) =>
-      repeat1(
-        choice(
-          /[^();]+/,
-          $._balanced_parens,
-        ),
-      ),
-
-    // Parenthesized SQL sources (iterator cursor control, etc.).
-    _opaque_sql_tail: ($) => $._opaque_inside_parens,
   };
 }

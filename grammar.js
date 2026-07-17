@@ -4,6 +4,9 @@
  * @license MIT
  *
  * Phase 1 lexical layer (#39 / docs/spec/01-lexical.md L1–L29).
+ * Phase 2 blocks & declarations (#41 / docs/spec/02-blocks.md B1–B38):
+ * block/body/declare_section, flat declaration choice, type definitions,
+ * cursors, nested subprograms, exception handlers; minimal statement set.
  * Phase 4 expression surface (#40 / docs/spec/04-expressions.md E1–E22):
  * reconciled Table 3-3 PREC ladder, D15 postfix chain, CASE expression,
  * calls/arguments, marked aggregates, shared iterator, static_expression.
@@ -133,47 +136,640 @@ export default grammar({
     no_others: ($) => [keyword("others")],
   },
 
-  // E15 / D19 — one declared CASE conflict (expression END vs statement END CASE).
   // Shared positional prefix of call vs marked aggregate needs GLR (D15).
+  // CASE expression vs statement may reappear as the statement catalog grows.
   conflicts: ($) => [
     [$.case_expression, $.case_statement],
     [$.call_expression, $.qualified_expression],
     [$._actual_parameter, $._unmarked_aggregate_element],
   ],
 
-  supertypes: ($) => [$.literal, $.expression],
+  // D3 — five supertypes in v1.
+  // Note: `type` is also a reserved word (_kw_type); the supertype rule is
+  // still named `type` per D3. type_spec / parameter_type are its children.
+  // D3 — five supertypes in v1 (literal, expression, statement, declaration, type).
+  supertypes: ($) => [
+    $.literal,
+    $.expression,
+    $.statement,
+    $.declaration,
+    $.type,
+  ],
 
   rules: {
     // ------------------------------------------------------------------
-    // Root & tracer block surface
+    // Root
     // ------------------------------------------------------------------
 
-    // Top-level: blocks, expression seeds, and thin CASE statement (E15 pair).
+    // Top-level: blocks, expression seeds, thin CASE statement (E15 pair).
+    // expression_statement is a test/seed harness only — not a PL/SQL statement.
     source_file: ($) =>
       repeat(choice($.block, $.expression_statement, $.case_statement)),
 
-    // Minimal block: BEGIN … END ; — statements inside (widen in #41/#42).
+    // ------------------------------------------------------------------
+    // Blocks (B1–B5, D18)
+    // ------------------------------------------------------------------
+
+    // One public block for anonymous and nested forms (B1).
     block: ($) =>
       seq(
+        repeat(field("label", $.label)),
+        optional(
+          seq($._kw_declare, field("declarations", $.declare_section)),
+        ),
+        field("body", $.body),
+      ),
+
+    // B5 — << name >>; no label_list wrapper.
+    label: ($) => seq("<<", field("name", $.identifier), ">>"),
+
+    // Flat declare list — no item_list_1 / item_list_2 (B6–B7 / D18).
+    declare_section: ($) => repeat1($.declaration),
+
+    // Reusable body (B1–B2) — also hangs off nested units later.
+    body: ($) =>
+      seq(
         $._kw_begin,
-        repeat1($.statement),
+        field("statements", $.statement_list),
+        optional(
+          seq($._kw_exception, field("handlers", $.exception_section)),
+        ),
         $._kw_end,
-        optional($.identifier),
+        optional(field("end_name", $.identifier)),
         ";",
       ),
+
+    // B3 — ≥1 statement; empty BEGIN → recovery.
+    statement_list: ($) => repeat1($.statement),
+
+    // B32 — wrapper for handlers.
+    exception_section: ($) => repeat1($.exception_handler),
+
+    // B33–B34 — do not enforce OTHERS last/unique; names = D15 name-site.
+    exception_handler: ($) =>
+      seq(
+        $._kw_when,
+        choice(
+          seq(
+            field("exception", $._exception_name),
+            repeat(seq($._kw_or, field("exception", $._exception_name))),
+          ),
+          keyword("others"),
+        ),
+        $._kw_then,
+        $.statement_list,
+      ),
+
+    // Name-site: seed + optional .member (D15) — no call postfix.
+    _exception_name: ($) => $._name_chain,
+
+    // ------------------------------------------------------------------
+    // Statements (B36 minimal; full catalog → #42 / 03-statements)
+    // ------------------------------------------------------------------
 
     statement: ($) =>
       choice(
         $.null_statement,
-        $.case_statement, // thin shell for E15 conflict (full surface → #41)
-        $.expression_statement,
+        $.assignment_statement,
+        $.procedure_call_statement,
+        $.block,
+        $.case_statement, // E15 pair; full WHEN surface → statements ticket
       ),
 
-    // Prefer null_statement over expression_statement(null_literal) for `NULL;`.
-    null_statement: ($) => prec(1, seq($._kw_null, ";")),
+    // Prefer null_statement over any expression/call of bare NULL.
+    null_statement: ($) => prec(2, seq($._kw_null, ";")),
 
-    // Thin statement so lexical / expression seeds appear at top level or in blocks.
+    // S23–S24 / D15 — LHS is assignment_target, not free expression.
+    assignment_statement: ($) =>
+      seq(
+        field("target", $.assignment_target),
+        ":=",
+        field("value", $.expression),
+        ";",
+      ),
+
+    assignment_target: ($) =>
+      choice(
+        $.identifier,
+        $.quoted_identifier,
+        $.bind_variable,
+        $.member_expression,
+        $.attribute_reference,
+        $.call_expression,
+        $.database_link_reference,
+      ),
+
+    // D15 / S37 — wraps call_expression or bare name/member/link chain.
+    procedure_call_statement: ($) =>
+      prec(
+        -1,
+        seq(
+          choice(
+            $.call_expression,
+            $.identifier,
+            $.quoted_identifier,
+            $.member_expression,
+            $.database_link_reference,
+          ),
+          ";",
+        ),
+      ),
+
+    // Thin seed so lexical / expression corpus cases appear at top level.
     expression_statement: ($) => seq($.expression, ";"),
+
+    // ------------------------------------------------------------------
+    // Declarations (B6–B12, B18) — flat choice, keyword-led vs name-led
+    // ------------------------------------------------------------------
+
+    declaration: ($) =>
+      choice(
+        // Keyword-led type definitions (B11, B14)
+        $.collection_type_definition,
+        $.record_type_definition,
+        $.ref_cursor_type_definition,
+        $.subtype_definition,
+        // Cursors (B19)
+        $.cursor_declaration,
+        $.cursor_definition,
+        // Nested subprograms (B23–B27)
+        $.function_declaration,
+        $.function_definition,
+        $.procedure_declaration,
+        $.procedure_definition,
+        // Pragma peer (B8 / D16)
+        $.pragma_declaration,
+        // Name-led items (B9–B10)
+        $.exception_declaration,
+        $.variable_declaration,
+      ),
+
+    // Scalar + constant; CONSTANT is anonymous keyword (B9–B10, B12).
+    // NOT NULL only with required initializer (grouped); bare NOT NULL → recovery.
+    variable_declaration: ($) =>
+      choice(
+        // Constant form — initializer required.
+        seq(
+          field("name", $.identifier),
+          keyword("constant"),
+          field("type", $.type_spec),
+          optional(seq($._kw_not, $._kw_null)),
+          field("default", $._default_clause),
+          ";",
+        ),
+        // Variable form — optional [NOT NULL] default as a group (B12).
+        seq(
+          field("name", $.identifier),
+          field("type", $.type_spec),
+          optional(
+            seq(
+              optional(seq($._kw_not, $._kw_null)),
+              field("default", $._default_clause),
+            ),
+          ),
+          ";",
+        ),
+      ),
+
+    exception_declaration: ($) =>
+      seq(field("name", $.identifier), $._kw_exception, ";"),
+
+    // D16 / DIR10 — generic PRAGMA name [(args)] ;
+    pragma_declaration: ($) =>
+      seq(
+        keyword("pragma"),
+        field("name", $.identifier),
+        optional(field("arguments", $.argument_list)),
+        ";",
+      ),
+
+    _default_clause: ($) =>
+      seq(choice(":=", $._kw_default), $.expression),
+
+    // ------------------------------------------------------------------
+    // Type definitions (B13–B18)
+    // ------------------------------------------------------------------
+
+    // B15 — public parent with three named body shapes.
+    collection_type_definition: ($) =>
+      seq(
+        $._kw_type,
+        field("name", $.identifier),
+        $._kw_is,
+        choice(
+          $.associative_array_type_body,
+          $.nested_table_type_body,
+          $.varray_type_body,
+        ),
+        ";",
+      ),
+
+    associative_array_type_body: ($) =>
+      seq(
+        $._kw_table,
+        $._kw_of,
+        field("element_type", $.type_spec),
+        optional(seq($._kw_not, $._kw_null)),
+        $._kw_index,
+        $._kw_by,
+        field("index_type", $.type_spec),
+      ),
+
+    nested_table_type_body: ($) =>
+      seq(
+        $._kw_table,
+        $._kw_of,
+        field("element_type", $.type_spec),
+        optional(seq($._kw_not, $._kw_null)),
+      ),
+
+    // B16 — VARRAY | VARYING ARRAY | ARRAY
+    varray_type_body: ($) =>
+      seq(
+        choice(
+          keyword("varray"),
+          seq(keyword("varying"), keyword("array")),
+          keyword("array"),
+        ),
+        "(",
+        field("size", $.number_literal),
+        ")",
+        $._kw_of,
+        field("element_type", $.type_spec),
+        optional(seq($._kw_not, $._kw_null)),
+      ),
+
+    record_type_definition: ($) =>
+      seq(
+        $._kw_type,
+        field("name", $.identifier),
+        $._kw_is,
+        keyword("record"),
+        "(",
+        $.field_definition,
+        repeat(seq(",", $.field_definition)),
+        ")",
+        ";",
+      ),
+
+    // B12 grouping on fields: optional [NOT NULL] default together.
+    field_definition: ($) =>
+      seq(
+        field("name", $.identifier),
+        field("type", $.type_spec),
+        optional(
+          seq(
+            optional(seq($._kw_not, $._kw_null)),
+            field("default", $._default_clause),
+          ),
+        ),
+      ),
+
+    ref_cursor_type_definition: ($) =>
+      seq(
+        $._kw_type,
+        field("name", $.identifier),
+        $._kw_is,
+        keyword("ref"),
+        $._kw_cursor,
+        optional(
+          seq(keyword("return"), field("return_type", $.type_spec)),
+        ),
+        ";",
+      ),
+
+    // B13 — trailing ; required.
+    subtype_definition: ($) =>
+      seq(
+        $._kw_subtype,
+        field("name", $.identifier),
+        $._kw_is,
+        field("base_type", $.type_spec),
+        optional($._subtype_constraint),
+        optional(seq($._kw_not, $._kw_null)),
+        ";",
+      ),
+
+    // B17 — sizes/precision = number_literal; optional unary on RANGE bounds.
+    _subtype_constraint: ($) =>
+      choice(
+        seq(
+          "(",
+          $.number_literal,
+          optional(seq(",", $.number_literal)),
+          ")",
+        ),
+        seq(
+          keyword("range"),
+          optional(choice("+", "-")),
+          $.number_literal,
+          "..",
+          optional(choice("+", "-")),
+          $.number_literal,
+        ),
+        seq(
+          keyword("character"),
+          keyword("set"),
+          choice($.identifier, $.quoted_identifier),
+        ),
+      ),
+
+    // ------------------------------------------------------------------
+    // Explicit cursors (B19–B22)
+    // ------------------------------------------------------------------
+
+    // Forward: RETURN required, no IS (B19).
+    cursor_declaration: ($) =>
+      seq(
+        $._kw_cursor,
+        field("name", $.identifier),
+        optional(field("parameters", $.cursor_parameter_list)),
+        keyword("return"),
+        field("type", $.type_spec),
+        ";",
+      ),
+
+    // Definition: IS query required; RETURN optional (B19–B20).
+    cursor_definition: ($) =>
+      seq(
+        $._kw_cursor,
+        field("name", $.identifier),
+        optional(field("parameters", $.cursor_parameter_list)),
+        optional(seq(keyword("return"), field("type", $.type_spec))),
+        $._kw_is,
+        field("query", $.cursor_query),
+        ";",
+      ),
+
+    // Temporary opaque SELECT stub until embedded-SQL ticket (B20 / D7).
+    // Stop before `;` / unbalanced `)` so the cursor definition terminator
+    // is not swallowed by the opaque tail (unlike parenthesized SQL sources).
+    cursor_query: ($) => seq($._kw_select, $._cursor_sql_tail),
+
+    _cursor_sql_tail: ($) =>
+      repeat1(
+        choice(
+          /[^();]+/,
+          seq("(", optional($._opaque_sql_tail), ")"),
+        ),
+      ),
+
+    // B22 — cursor-specific IN-only parameters.
+    cursor_parameter_list: ($) =>
+      seq(
+        "(",
+        $.cursor_parameter,
+        repeat(seq(",", $.cursor_parameter)),
+        ")",
+      ),
+
+    cursor_parameter: ($) =>
+      seq(
+        field("name", $.identifier),
+        optional($._kw_in),
+        field("type", $.parameter_type),
+        optional(field("default", $._default_clause)),
+      ),
+
+    // ------------------------------------------------------------------
+    // Nested subprograms (B23–B27)
+    // ------------------------------------------------------------------
+
+    function_declaration: ($) =>
+      seq(
+        $._function_heading,
+        repeat($._function_property),
+        ";",
+      ),
+
+    function_definition: ($) =>
+      seq(
+        $._function_heading,
+        repeat($._function_property),
+        choice($._kw_is, $._kw_as), // B25 — anonymous; no is_or_as field
+        choice(
+          seq(
+            optional(field("declarations", $.declare_section)),
+            field("body", $.body),
+          ),
+          // call_spec has no trailing ; of its own — definition terminator.
+          seq(field("call_spec", $.call_spec), ";"),
+        ),
+      ),
+
+    _function_heading: ($) =>
+      seq(
+        $._kw_function,
+        field("name", $.identifier),
+        optional(field("parameters", $.parameter_list)),
+        keyword("return"),
+        field("return_type", $.type_spec),
+      ),
+
+    // B23 — nested function modifiers only (no CREATE-only properties).
+    _function_property: ($) =>
+      choice(
+        keyword("deterministic"),
+        keyword("pipelined"),
+        keyword("parallel_enable"),
+        seq(
+          keyword("result_cache"),
+          optional($._relies_on_clause),
+        ),
+      ),
+
+    _relies_on_clause: ($) =>
+      seq(
+        keyword("relies_on"),
+        "(",
+        $._name_chain,
+        repeat(seq(",", $._name_chain)),
+        ")",
+      ),
+
+    procedure_declaration: ($) =>
+      seq(
+        $._procedure_heading,
+        ";",
+      ),
+
+    // B23 — nested procedures have no CREATE/package-only properties.
+    procedure_definition: ($) =>
+      seq(
+        $._procedure_heading,
+        choice($._kw_is, $._kw_as),
+        choice(
+          seq(
+            optional(field("declarations", $.declare_section)),
+            field("body", $.body),
+          ),
+          seq(field("call_spec", $.call_spec), ";"),
+        ),
+      ),
+
+    _procedure_heading: ($) =>
+      seq(
+        $._kw_procedure,
+        field("name", $.identifier),
+        optional(field("parameters", $.parameter_list)),
+      ),
+
+    // B26 — coarse LANGUAGE … envelope; deep call_spec → units.
+    // Stops before the definition's trailing `;` (added by function/procedure_definition).
+    call_spec: ($) =>
+      seq(
+        keyword("language"),
+        field("language", $.identifier),
+        repeat($._call_spec_piece),
+      ),
+
+    _call_spec_piece: ($) =>
+      choice(
+        $.string_literal,
+        $.q_string_literal,
+        $.number_literal,
+        keyword("name"),
+        keyword("library"),
+        keyword("agent"),
+        $.identifier,
+        seq("(", optional($._call_spec_paren), ")"),
+      ),
+
+    _call_spec_paren: ($) =>
+      repeat1(
+        choice(
+          $.string_literal,
+          $.q_string_literal,
+          $.number_literal,
+          $.identifier,
+          /[^()]+/,
+          seq("(", optional($._call_spec_paren), ")"),
+        ),
+      ),
+
+    // Full formal parameters (IN / OUT / IN OUT / NOCOPY).
+    // Children are parameter_declaration nodes; field `parameters` is optional
+    // sugar — corpus matches on node types.
+    parameter_list: ($) =>
+      seq(
+        "(",
+        optional(
+          seq(
+            $.parameter_declaration,
+            repeat(seq(",", $.parameter_declaration)),
+          ),
+        ),
+        ")",
+      ),
+
+    parameter_declaration: ($) =>
+      seq(
+        field("name", $.identifier),
+        choice(
+          // IN OUT [NOCOPY] type — prefer over bare IN
+          prec(
+            2,
+            seq(
+              $._kw_in,
+              keyword("out"),
+              optional(keyword("nocopy")),
+              field("type", $.parameter_type),
+            ),
+          ),
+          // OUT [NOCOPY] type
+          prec(
+            2,
+            seq(
+              keyword("out"),
+              optional(keyword("nocopy")),
+              field("type", $.parameter_type),
+            ),
+          ),
+          // [IN] type [default] — defaults only on IN branch
+          prec(
+            1,
+            seq(
+              optional($._kw_in),
+              field("type", $.parameter_type),
+              optional(field("default", $._default_clause)),
+            ),
+          ),
+        ),
+      ),
+
+    // ------------------------------------------------------------------
+    // Datatype / type_spec / parameter_type (B24, B28–B31)
+    // ------------------------------------------------------------------
+
+    // D3 supertype `type` — declaration-site and formal type nodes.
+    type: ($) => choice($.type_spec, $.parameter_type),
+
+    // Full declaration-site types.
+    // Name chains are restricted (no full expression) so VARCHAR2(n) is
+    // precision, not call_expression (B24 / B28–B30).
+    //
+    // `%` attr form is a named rule aliased to attribute_reference so type
+    // and expression share one public node (B28 / D15).
+    type_spec: ($) =>
+      choice(
+        // B28 — prefer attribute form when `%` follows the name chain.
+        // Alias so the public node is attribute_reference (same as expressions).
+        alias($._type_attribute_reference, $.attribute_reference),
+        seq(keyword("ref"), $._name_chain),
+        prec.right(
+          PREC.CALL + 1,
+          seq($._name_chain, $._type_precision),
+        ),
+        $._name_chain,
+      ),
+
+    // B24 — unconstrained formals: no inline precision parens.
+    parameter_type: ($) =>
+      choice(
+        alias($._type_attribute_reference, $.attribute_reference),
+        seq(keyword("ref"), $._name_chain),
+        $._name_chain,
+      ),
+
+    // Same fields as expression attribute_reference (object, attribute).
+    _type_attribute_reference: ($) =>
+      prec(
+        PREC.MEMBER + 1,
+        seq(
+          field("object", $._name_chain),
+          "%",
+          field("attribute", $._attribute_name),
+        ),
+      ),
+
+    // D15 name-site chain for types / exception names: seed + `.` only.
+    // Dotted forms alias to member_expression for a uniform CST.
+    _name_chain: ($) =>
+      choice(
+        $.identifier,
+        $.quoted_identifier,
+        alias($._type_member, $.member_expression),
+      ),
+
+    _type_member: ($) =>
+      prec.left(
+        PREC.MEMBER,
+        seq(
+          field("object", $._name_chain),
+          ".",
+          field("name", $.identifier),
+        ),
+      ),
+
+    // B17 / B30 — number_literal only; optional CHAR/BYTE length semantics.
+    _type_precision: ($) =>
+      seq(
+        "(",
+        $.number_literal,
+        optional(seq(",", $.number_literal)),
+        optional(choice(keyword("char"), keyword("byte"))),
+        ")",
+      ),
 
     // ------------------------------------------------------------------
     // Expression root (E11 / D20) — one recursive public `expression`
@@ -392,14 +988,23 @@ export default grammar({
         ),
       ),
 
+    // Attribute after `%` — TYPE is reserved (L9) so it cannot be a plain
+    // identifier; alias reserved TYPE (and peer keywords if needed) so the
+    // CST still shows `identifier` (B28 / D15).
     attribute_reference: ($) =>
       prec.left(
         PREC.MEMBER,
         seq(
           field("object", $.expression),
           "%",
-          field("attribute", $.identifier),
+          field("attribute", $._attribute_name),
         ),
+      ),
+
+    _attribute_name: ($) =>
+      choice(
+        $.identifier,
+        alias($._kw_type, $.identifier),
       ),
 
     database_link_reference: ($) =>

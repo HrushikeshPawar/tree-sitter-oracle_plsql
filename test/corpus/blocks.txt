@@ -1,0 +1,612 @@
+================================================================================
+labeled block with end_name
+================================================================================
+
+<<outer>>
+BEGIN
+  NULL;
+END outer;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    label: (label
+      name: (identifier))
+    body: (body
+      statements: (statement_list
+        (null_statement))
+      end_name: (identifier))))
+
+================================================================================
+declare section with variable and constant
+================================================================================
+
+DECLARE
+  v_count NUMBER;
+  c_max CONSTANT PLS_INTEGER := 100;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (variable_declaration
+        name: (identifier)
+        type: (type_spec
+          (identifier)))
+      (variable_declaration
+        name: (identifier)
+        type: (type_spec
+          (identifier))
+        default: (number_literal)))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+variable with NOT NULL and default
+================================================================================
+
+DECLARE
+  v_name VARCHAR2(100) NOT NULL := 'x';
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (variable_declaration
+        name: (identifier)
+        type: (type_spec
+          (identifier)
+          (number_literal))
+        default: (string_literal)))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+%TYPE and %ROWTYPE via attribute_reference
+================================================================================
+
+DECLARE
+  v_id employees.employee_id%TYPE;
+  r_emp employees%ROWTYPE;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (variable_declaration
+        name: (identifier)
+        type: (type_spec
+          (attribute_reference
+            object: (member_expression
+              object: (identifier)
+              name: (identifier))
+            attribute: (identifier))))
+      (variable_declaration
+        name: (identifier)
+        type: (type_spec
+          (attribute_reference
+            object: (identifier)
+            attribute: (identifier)))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+exception_declaration
+================================================================================
+
+DECLARE
+  e_boom EXCEPTION;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (exception_declaration
+        name: (identifier)))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+pragma_declaration in declare section
+================================================================================
+
+DECLARE
+  e_boom EXCEPTION;
+  PRAGMA EXCEPTION_INIT(e_boom, -20001);
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (exception_declaration
+        name: (identifier))
+      (pragma_declaration
+        name: (identifier)
+        arguments: (argument_list
+          (identifier)
+          (unary_expression
+            argument: (number_literal)))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+collection_type_definition associative array
+================================================================================
+
+DECLARE
+  TYPE t_map IS TABLE OF VARCHAR2(50) INDEX BY PLS_INTEGER;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (collection_type_definition
+        name: (identifier)
+        (associative_array_type_body
+          element_type: (type_spec
+            (identifier)
+            (number_literal))
+          index_type: (type_spec
+            (identifier)))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+collection_type_definition nested table
+================================================================================
+
+DECLARE
+  TYPE t_list IS TABLE OF NUMBER;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (collection_type_definition
+        name: (identifier)
+        (nested_table_type_body
+          element_type: (type_spec
+            (identifier)))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+collection_type_definition varray spellings
+================================================================================
+
+DECLARE
+  TYPE t_v1 IS VARRAY(10) OF NUMBER;
+  TYPE t_v2 IS VARYING ARRAY(5) OF VARCHAR2(20);
+  TYPE t_v3 IS ARRAY(3) OF PLS_INTEGER;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (collection_type_definition
+        name: (identifier)
+        (varray_type_body
+          size: (number_literal)
+          element_type: (type_spec
+            (identifier))))
+      (collection_type_definition
+        name: (identifier)
+        (varray_type_body
+          size: (number_literal)
+          element_type: (type_spec
+            (identifier)
+            (number_literal))))
+      (collection_type_definition
+        name: (identifier)
+        (varray_type_body
+          size: (number_literal)
+          element_type: (type_spec
+            (identifier)))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+record_type_definition
+================================================================================
+
+DECLARE
+  TYPE t_rec IS RECORD (
+    id NUMBER NOT NULL := 0,
+    name VARCHAR2(50)
+  );
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (record_type_definition
+        name: (identifier)
+        (field_definition
+          name: (identifier)
+          type: (type_spec
+            (identifier))
+          default: (number_literal))
+        (field_definition
+          name: (identifier)
+          type: (type_spec
+            (identifier)
+            (number_literal)))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+ref_cursor_type_definition weak and strong
+================================================================================
+
+DECLARE
+  TYPE t_weak IS REF CURSOR;
+  TYPE t_strong IS REF CURSOR RETURN employees%ROWTYPE;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (ref_cursor_type_definition
+        name: (identifier))
+      (ref_cursor_type_definition
+        name: (identifier)
+        return_type: (type_spec
+          (attribute_reference
+            object: (identifier)
+            attribute: (identifier)))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+subtype_definition
+================================================================================
+
+DECLARE
+  SUBTYPE t_id IS NUMBER(6,0) NOT NULL;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (subtype_definition
+        name: (identifier)
+        base_type: (type_spec
+          (identifier)
+          (number_literal)
+          (number_literal))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+cursor_declaration forward with RETURN
+================================================================================
+
+DECLARE
+  CURSOR c_emp RETURN employees%ROWTYPE;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (cursor_declaration
+        name: (identifier)
+        type: (type_spec
+          (attribute_reference
+            object: (identifier)
+            attribute: (identifier)))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+cursor_definition with query stub
+================================================================================
+
+DECLARE
+  CURSOR c_emp IS SELECT * FROM employees;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (cursor_definition
+        name: (identifier)
+        query: (cursor_query)))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+cursor with parameters
+================================================================================
+
+DECLARE
+  CURSOR c_emp(p_id IN NUMBER) IS SELECT * FROM employees;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (cursor_definition
+        name: (identifier)
+        parameters: (cursor_parameter_list
+          (cursor_parameter
+            name: (identifier)
+            type: (parameter_type
+              (identifier))))
+        query: (cursor_query)))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+nested function forward declaration and definition
+================================================================================
+
+DECLARE
+  FUNCTION f_add(a NUMBER, b NUMBER) RETURN NUMBER;
+  FUNCTION f_add(a NUMBER, b NUMBER) RETURN NUMBER IS
+  BEGIN
+    NULL;
+  END f_add;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (function_declaration
+        name: (identifier)
+        parameters: (parameter_list
+          (parameter_declaration
+            name: (identifier)
+            type: (parameter_type
+              (identifier)))
+          (parameter_declaration
+            name: (identifier)
+            type: (parameter_type
+              (identifier))))
+        return_type: (type_spec
+          (identifier)))
+      (function_definition
+        name: (identifier)
+        parameters: (parameter_list
+          (parameter_declaration
+            name: (identifier)
+            type: (parameter_type
+              (identifier)))
+          (parameter_declaration
+            name: (identifier)
+            type: (parameter_type
+              (identifier))))
+        return_type: (type_spec
+          (identifier))
+        body: (body
+          statements: (statement_list
+            (null_statement))
+          end_name: (identifier))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+nested procedure definition with declare section
+================================================================================
+
+DECLARE
+  PROCEDURE p_work IS
+    v_n NUMBER := 1;
+  BEGIN
+    NULL;
+  END p_work;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (procedure_definition
+        name: (identifier)
+        declarations: (declare_section
+          (variable_declaration
+            name: (identifier)
+            type: (type_spec
+              (identifier))
+            default: (number_literal)))
+        body: (body
+          statements: (statement_list
+            (null_statement))
+          end_name: (identifier))))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))
+
+================================================================================
+exception handlers with OR and OTHERS
+================================================================================
+
+BEGIN
+  NULL;
+EXCEPTION
+  WHEN NO_DATA_FOUND OR TOO_MANY_ROWS THEN
+    NULL;
+  WHEN OTHERS THEN
+    NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    body: (body
+      statements: (statement_list
+        (null_statement))
+      handlers: (exception_section
+        (exception_handler
+          exception: (identifier)
+          exception: (identifier)
+          (statement_list
+            (null_statement)))
+        (exception_handler
+          (statement_list
+            (null_statement)))))))
+
+================================================================================
+nested block as statement
+================================================================================
+
+BEGIN
+  BEGIN
+    NULL;
+  END;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    body: (body
+      statements: (statement_list
+        (block
+          body: (body
+            statements: (statement_list
+              (null_statement))))))))
+
+================================================================================
+assignment and procedure call statements
+================================================================================
+
+BEGIN
+  x := 1;
+  do_work;
+  do_work(a, b);
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    body: (body
+      statements: (statement_list
+        (assignment_statement
+          target: (assignment_target
+            (identifier))
+          value: (number_literal))
+        (procedure_call_statement
+          (identifier))
+        (procedure_call_statement
+          (call_expression
+            function: (identifier)
+            arguments: (argument_list
+              (identifier)
+              (identifier))))))))
+
+================================================================================
+empty BEGIN recovery
+================================================================================
+
+BEGIN
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (ERROR))
+
+================================================================================
+NOT NULL without initializer recovery
+================================================================================
+
+DECLARE
+  v_x NUMBER NOT NULL;
+BEGIN
+  NULL;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block
+    declarations: (declare_section
+      (variable_declaration
+        name: (identifier)
+        type: (type_spec
+          (identifier))
+        (ERROR)))
+    body: (body
+      statements: (statement_list
+        (null_statement)))))

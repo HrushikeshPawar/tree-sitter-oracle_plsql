@@ -8,8 +8,9 @@ BEGIN NULL; END;
 
 (source_file
   (block
-    (statement
-      (null_statement))))
+    (body
+      (statement_list
+        (null_statement)))))
 
 ==================
 block comment via external scanner
@@ -21,8 +22,9 @@ BEGIN /* block comment */ NULL; END;
 
 (source_file
   (block
-    (statement
-      (null_statement))))
+    (body
+      (statement_list
+        (null_statement)))))
 
 ==================
 case-insensitive keywords
@@ -34,5 +36,6 @@ begin null; end;
 
 (source_file
   (block
-    (statement
-      (null_statement))))
+    (body
+      (statement_list
+        (null_statement)))))

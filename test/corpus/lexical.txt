@@ -338,8 +338,9 @@ BEGIN /* block comment */ NULL; END;
 
 (source_file
   (block
-    (statement
-      (null_statement))))
+    (body
+      (statement_list
+        (null_statement)))))
 
 ================================================================================
 unterminated block comment recovery
@@ -352,11 +353,12 @@ NULL; END;
 
 (source_file
   (block
-    (ERROR
-      (identifier)
-      (identifier))
-    (statement
-      (null_statement))))
+    (body
+      (ERROR
+        (identifier)
+        (identifier))
+      (statement_list
+        (null_statement)))))
 
 ================================================================================
 reserved word SELECT is not identifier
@@ -420,8 +422,9 @@ BEGIN NULL; END;
 
 (source_file
   (block
-    (statement
-      (null_statement))))
+    (body
+      (statement_list
+        (null_statement)))))
 
 ================================================================================
 case-insensitive keywords
@@ -433,8 +436,9 @@ begin null; end;
 
 (source_file
   (block
-    (statement
-      (null_statement))))
+    (body
+      (statement_list
+        (null_statement)))))
 
 ================================================================================
 longest-match multi-char delimiters

@@ -44,6 +44,10 @@
         "named": true
       },
       {
+        "type": "record_variable_declaration",
+        "named": true
+      },
+      {
         "type": "ref_cursor_type_definition",
         "named": true
       },
@@ -928,13 +932,9 @@
     "named": true,
     "fields": {
       "default": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
-          {
-            "type": ":=",
-            "named": false
-          },
           {
             "type": "expression",
             "named": true
@@ -1257,13 +1257,9 @@
     "named": true,
     "fields": {
       "default": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
-          {
-            "type": ":=",
-            "named": false
-          },
           {
             "type": "expression",
             "named": true
@@ -2027,13 +2023,9 @@
     "named": true,
     "fields": {
       "default": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
-          {
-            "type": ":=",
-            "named": false
-          },
           {
             "type": "expression",
             "named": true
@@ -2065,16 +2057,17 @@
   {
     "type": "parameter_list",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "parameter_declaration",
-          "named": true
-        }
-      ]
+    "fields": {
+      "parameters": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "parameter_declaration",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -2402,6 +2395,32 @@
     }
   },
   {
+    "type": "record_variable_declaration",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "attribute_reference",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "ref_cursor_type_definition",
     "named": true,
     "fields": {
@@ -2709,13 +2728,9 @@
     "named": true,
     "fields": {
       "default": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
-          {
-            "type": ":=",
-            "named": false
-          },
           {
             "type": "expression",
             "named": true

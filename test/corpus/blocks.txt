@@ -88,20 +88,18 @@ END;
 (source_file
   (block
     declarations: (declare_section
-      (variable_declaration
+      (record_variable_declaration
         name: (identifier)
-        type: (type_spec
-          (attribute_reference
-            object: (member_expression
-              object: (identifier)
-              name: (identifier))
-            attribute: (identifier))))
-      (variable_declaration
-        name: (identifier)
-        type: (type_spec
-          (attribute_reference
+        type: (attribute_reference
+          object: (member_expression
             object: (identifier)
-            attribute: (identifier)))))
+            name: (identifier))
+          attribute: (identifier)))
+      (record_variable_declaration
+        name: (identifier)
+        type: (attribute_reference
+          object: (identifier)
+          attribute: (identifier))))
     body: (body
       statements: (statement_list
         (null_statement)))))
@@ -429,11 +427,11 @@ END;
       (function_declaration
         name: (identifier)
         parameters: (parameter_list
-          (parameter_declaration
+          parameters: (parameter_declaration
             name: (identifier)
             type: (parameter_type
               (identifier)))
-          (parameter_declaration
+          parameters: (parameter_declaration
             name: (identifier)
             type: (parameter_type
               (identifier))))
@@ -442,11 +440,11 @@ END;
       (function_definition
         name: (identifier)
         parameters: (parameter_list
-          (parameter_declaration
+          parameters: (parameter_declaration
             name: (identifier)
             type: (parameter_type
               (identifier)))
-          (parameter_declaration
+          parameters: (parameter_declaration
             name: (identifier)
             type: (parameter_type
               (identifier))))
